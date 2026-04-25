@@ -279,16 +279,17 @@ export async function POST(request: NextRequest) {
         const $ = cheerio.load(response.data);
 
         // Try window._sharedData
-        let sharedData: SharedData | null = null;
+        let sharedDataRaw: unknown = null;
         $('script').each((_, el) => {
           const content = $(el).html();
           if (content && content.includes('window._sharedData = ')) {
             try {
               const jsonStr = content.split('window._sharedData = ')[1].split(';</script>')[0];
-              sharedData = JSON.parse(jsonStr) as SharedData;
+              sharedDataRaw = JSON.parse(jsonStr);
             } catch (e) { /* ignore */ }
           }
         });
+        const sharedData = sharedDataRaw as SharedData | null;
 
         if (sharedData?.entry_data?.PostPage?.[0]?.graphql?.shortcode_media) {
           post = parseGraphQLResponse(sharedData.entry_data.PostPage[0] as unknown);
