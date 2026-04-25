@@ -108,8 +108,11 @@ export default function Hero() {
     }
   };
 
+  const hasContent = loading || result;
+
   return (
-    <section className="relative min-h-screen flex flex-col items-center pt-24 pb-20 px-4 overflow-hidden bg-[#fafafa]">
+    <section className={`relative flex flex-col items-center px-4 overflow-hidden bg-[#fafafa] transition-all duration-500
+      ${hasContent ? 'pt-24 pb-20' : 'min-h-screen justify-center pt-6 pb-10'}`}>
       {/* Subtle background glow */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-[600px] h-[600px] rounded-full bg-gradient-to-br from-[#F77737]/10 via-[#E1306C]/10 to-[#833AB4]/10 blur-3xl" />
