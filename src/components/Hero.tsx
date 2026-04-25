@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Loader2, CheckCircle2, AlertCircle, ClipboardPaste, ArrowRight, Trash2, Link2 } from "lucide-react";
+import { Loader2, CheckCircle2, AlertCircle, ClipboardPaste, ArrowRight, Trash2, Link2, Play, Image as ImageIcon, Layers, UserCircle, Music } from "lucide-react";
 import toast from "react-hot-toast";
 import { InstagramPost } from "@/types/instagram";
 import MediaCard from "@/components/MediaCard";
@@ -114,8 +114,8 @@ export default function Hero() {
   const hasContent = loading || result;
 
   return (
-    <section className={`relative flex flex-col items-center px-4 overflow-hidden bg-[#fafafa] dark:bg-gray-950 transition-all duration-500
-      ${hasContent ? 'pt-24 pb-20' : 'min-h-screen pt-24 pb-10'}`}>
+    <section className={`relative flex flex-col items-center px-4 overflow-hidden bg-[#fafafa] dark:bg-[#0A0A0F] transition-colors duration-500
+      ${hasContent ? 'pt-24 pb-20' : 'min-h-screen pt-32 pb-20'}`}>
       {/* Subtle background glow */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-[600px] h-[600px] rounded-full bg-gradient-to-br from-[#F77737]/10 via-[#E1306C]/10 to-[#833AB4]/10 blur-3xl" />
@@ -123,50 +123,63 @@ export default function Hero() {
 
       <div className={`relative z-10 w-full max-w-lg mx-auto flex flex-col items-center ${!hasContent ? 'my-auto' : ''}`}>
 
-        {/* ── Logo mark ── */}
-        <motion.div
-          initial={{ scale: 0.8, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ type: "spring", stiffness: 260, damping: 20 }}
-          className="mb-6"
-        >
-          <InstorixLogo variant="icon" size={56} className="rounded-2xl shadow-lg" />
-        </motion.div>
-
         {/* ── Headline ── */}
         <motion.div
           initial={{ y: 16, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 0.1 }}
-          className="text-center mb-8"
+          className="text-center mb-8 w-full"
         >
-          <h1 className="text-4xl font-extrabold tracking-tight text-gray-900 dark:text-white mb-2">
-            Download any Instagram{" "}
-            <span className={`bg-gradient-to-r ${IG_GRADIENT} bg-clip-text text-transparent`}>
-              content
-            </span>
+          <h1 className="text-[40px] leading-[1.1] sm:text-5xl md:text-6xl font-bold tracking-tight text-gray-900 dark:text-white mb-6">
+            Download any <br className="hidden sm:block"/>
+            <span className={`bg-gradient-to-r ${IG_GRADIENT} bg-clip-text text-transparent pr-1`}>
+              Instagram
+            </span> content
           </h1>
-          <p className="text-[15px] text-gray-500 dark:text-gray-400 font-medium max-w-sm mx-auto">
-            Reels · Posts · Stories · Profile Pics · Audio
+          <p className="text-[17px] text-gray-500 dark:text-[#8ba1ba] font-medium max-w-md mx-auto leading-relaxed">
+            Save Reels, Posts, Stories, Profile Photos and Audio in high quality. — Fast, free and easy.
           </p>
+        </motion.div>
+
+        {/* ── Icons Row ── */}
+        <motion.div
+          initial={{ y: 16, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.2 }}
+          className="flex items-center justify-center gap-4 sm:gap-6 mb-12 w-full"
+        >
+          {[
+            { icon: Play, label: "Reels" },
+            { icon: ImageIcon, label: "Posts" },
+            { icon: Layers, label: "Stories" },
+            { icon: UserCircle, label: "Profile Pics" },
+            { icon: Music, label: "Audio" }
+          ].map((item, i) => (
+            <div key={i} className="flex flex-col items-center gap-3">
+              <div className="w-[52px] h-[52px] rounded-full border border-gray-200 dark:border-gray-800 bg-white dark:bg-[#12121A] flex items-center justify-center shadow-sm dark:shadow-lg">
+                <item.icon className="w-[22px] h-[22px] text-[#E1306C]" strokeWidth={1.5} />
+              </div>
+              <span className="text-[12px] text-gray-600 dark:text-gray-400 font-medium">{item.label}</span>
+            </div>
+          ))}
         </motion.div>
 
         {/* ── Input card ── */}
         <motion.div
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.18 }}
-          className="w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-3xl shadow-lg p-5 mb-6"
+          transition={{ delay: 0.3 }}
+          className="w-full max-w-[540px] bg-white dark:bg-[#12121A] border border-gray-200 dark:border-gray-800 rounded-[28px] shadow-xl dark:shadow-2xl p-5 mb-6 relative z-20"
         >
           <form onSubmit={handleSubmit} className="space-y-3">
             {/* URL field */}
-            <div className="relative flex items-center">
-              <span className="absolute left-3.5 text-gray-300">
-                <Link2 className="w-4 h-4" />
+            <div className="relative flex items-center h-[56px] bg-gray-50 dark:bg-[#1A1A24] border border-gray-200 dark:border-gray-800 focus-within:border-gray-400 dark:focus-within:border-gray-600 rounded-xl overflow-hidden transition-colors">
+              <span className="pl-4 pr-2 text-gray-400 dark:text-gray-500">
+                <Link2 className="w-[18px] h-[18px]" />
               </span>
               <input
                 type="url"
-                placeholder="Paste Instagram URL here..."
+                placeholder="Paste Instagram link here..."
                 value={url}
                 onChange={handleUrlChange}
                 onPaste={(e) => {
@@ -175,22 +188,17 @@ export default function Hero() {
                     setTimeout(() => handleSubmit(undefined, text), 10);
                   }
                 }}
-                className={`w-full h-12 pl-11 pr-[110px] rounded-2xl text-[14px] bg-gray-50 dark:bg-gray-800 border outline-none transition-all
-                  placeholder:text-gray-300 dark:placeholder:text-gray-500 text-gray-800 dark:text-gray-100
-                  ${isValid === false ? "border-red-400 focus:ring-2 focus:ring-red-200" :
-                    isValid === true  ? "border-green-400 focus:ring-2 focus:ring-green-200" :
-                    "border-gray-200 dark:border-gray-700 focus:ring-2 focus:ring-[#E1306C]/20 focus:border-[#E1306C]/60"}`}
+                className="flex-1 h-full bg-transparent text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 text-[15px] outline-none pr-3"
               />
-              <div className="absolute right-2 flex items-center gap-1.5">
+              <div className="pr-1.5 flex items-center gap-2">
                 {isValid === true  && <CheckCircle2 className="w-4 h-4 text-green-500 shrink-0" />}
-                {isValid === false && <AlertCircle  className="w-4 h-4 text-red-400 shrink-0" />}
+                {isValid === false && <AlertCircle  className="w-4 h-4 text-red-500 shrink-0" />}
                 <button
                   type="button"
                   onClick={handlePasteClick}
-                  className="cursor-pointer flex items-center gap-1 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-500 dark:text-gray-300 text-[11px] font-semibold px-2.5 py-1.5 rounded-xl transition shrink-0"
+                  className="cursor-pointer h-[44px] px-4 rounded-lg bg-white dark:bg-[#252533] hover:bg-gray-100 dark:hover:bg-[#2d2e3d] text-gray-700 dark:text-white text-[13px] font-semibold flex items-center gap-1.5 transition shrink-0 border border-gray-200 dark:border-gray-700/50 shadow-sm dark:shadow-none"
                 >
-                  {pasted ? <CheckCircle2 className="w-3 h-3" /> : <ClipboardPaste className="w-3 h-3" />}
-                  {pasted ? "Pasted" : "Paste"}
+                  <ClipboardPaste className="w-3.5 h-3.5" /> Paste
                 </button>
               </div>
             </div>
@@ -214,15 +222,15 @@ export default function Hero() {
             <button
               type="submit"
               disabled={loading || !isValid}
-              className={`cursor-pointer w-full h-12 rounded-2xl font-semibold text-[15px] text-white flex items-center justify-center gap-2 transition-all
+              className={`cursor-pointer w-full h-[56px] rounded-xl font-bold text-[16px] text-white flex items-center justify-center gap-2 transition-all shadow-[0_4px_20px_-5px_rgba(225,48,108,0.4)]
                 bg-gradient-to-r ${IG_GRADIENT}
                 disabled:opacity-50 disabled:cursor-not-allowed
-                hover:opacity-95 active:scale-[0.98] shadow-md`}
+                hover:opacity-95 active:scale-[0.98] mt-2`}
             >
               {loading ? (
-                <><Loader2 className="w-4 h-4 animate-spin" /> Fetching…</>
+                <><Loader2 className="w-5 h-5 animate-spin" /> Fetching…</>
               ) : (
-                <><ArrowRight className="w-4 h-4" /> Download</>
+                <><ArrowRight className="w-5 h-5" /> Download</>
               )}
             </button>
           </form>
