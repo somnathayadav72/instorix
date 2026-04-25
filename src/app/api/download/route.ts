@@ -196,9 +196,9 @@ export async function POST(request: NextRequest) {
               : (directResult.media_details.length > 1 ? 'carousel' : 'post'),
             author: directResult.post_info?.owner_username || 'Unknown',
             caption: directResult.post_info?.caption || '',
-            mediaItems: directResult.media_details.map((m: DirectMediaItem) => ({
+            mediaItems: directResult.media_details.map((m) => ({
               url: m.url,
-              type: m.type === 'video' ? 'video' : 'image',
+              type: (m.type === 'video' ? 'video' : 'image') as 'video' | 'image',
               thumbnail: m.thumbnail || m.url,
             })),
           };
