@@ -2,7 +2,49 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export const runtime = 'nodejs';
 
+// Simple in-memory rate limiting for proxy
+const rateLimitMap = new Map<string, { count: number; timestamp: number }>();
+
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, val] of rateLimitMap.entries()) {
+    if (now - val.timestamp > 60000 * 2) rateLimitMap.delete(key);
+  }
+}, 5 * 60 * 1000);
+
+function checkRateLimit(ip: string): boolean {
+  const now = Date.now();
+  const userRecord = rateLimitMap.get(ip);
+  
+  if (!userRecord || now - userRecord.timestamp > 60000) {
+    rateLimitMap.set(ip, { count: 1, timestamp: now });
+    return true;
+  }
+  if (userRecord.count >= 30) return false; // Allow up to 30 media fetches per minute per IP
+  userRecord.count += 1;
+  return true;
+}
+
 export async function GET(request: NextRequest) {
+  // 1. Rate Limiting Protection
+  const ip = request.headers.get('x-forwarded-for') || '127.0.0.1';
+  if (!checkRateLimit(ip)) {
+    return new NextResponse('Too many requests', { status: 429 });
+  }
+
+  // 2. Anti-Leeching Protection (block other sites from using our proxy)
+  const referer = request.headers.get('referer') || '';
+  const origin = request.headers.get('origin') || '';
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://instorix.in';
+  
+  // Only enforce in production when APP_URL is defined as a real domain
+  if (process.env.NODE_ENV === 'production' && !appUrl.includes('localhost')) {
+    const isAllowed = referer.startsWith(appUrl) || origin.startsWith(appUrl);
+    if (!isAllowed && (referer || origin)) { // If headers are present but don't match our domain
+      return new NextResponse('Forbidden', { status: 403 });
+    }
+  }
+
   const { searchParams } = new URL(request.url);
   const targetUrl = searchParams.get('url');
 
@@ -11,6 +53,16 @@ export async function GET(request: NextRequest) {
   }
 
   try {
+    const parsedTarget = new URL(targetUrl);
+    const validDomains = ['instagram.com', 'cdninstagram.com', 'fbcdn.net'];
+    const isValidDomain = validDomains.some(domain => 
+      parsedTarget.hostname === domain || parsedTarget.hostname.endsWith('.' + domain)
+    );
+
+    if (parsedTarget.protocol !== 'https:' || !isValidDomain) {
+      return NextResponse.json({ error: 'Invalid or unsupported media URL' }, { status: 403 });
+    }
+
     // Strip Instagram's 640x640 size constraint so we serve full-resolution images
     const fetchUrl = targetUrl.replace(/(stp=[^&]*)s640x640([^&]*)/g, '$1$2');
 
@@ -35,7 +87,10 @@ export async function GET(request: NextRequest) {
     const shortcodeParam = searchParams.get('shortcode') || 'media';
     const defaultFilename = `instorix_${shortcodeParam}.${extension}`;
     // Prefer filename passed explicitly from the client (already has correct ext)
-    const filename = searchParams.get('filename') || defaultFilename;
+    const rawFilename = searchParams.get('filename') || defaultFilename;
+    // 3. Header Injection & Path Traversal Protection
+    // Strip out newlines, carriage returns, quotes, and path separators
+    const filename = rawFilename.replace(/[\r\n"/\\]/g, '_');
 
     const isInline = searchParams.get('inline') === 'true';
     const disposition = isInline ? `inline; filename="${filename}"` : `attachment; filename="${filename}"`;
@@ -45,6 +100,7 @@ export async function GET(request: NextRequest) {
         'Content-Type': contentType,
         'Content-Disposition': disposition,
         'Cache-Control': 'no-store',
+        'Access-Control-Allow-Origin': process.env.NEXT_PUBLIC_APP_URL || 'https://instorix.in',
       },
     });
   } catch (error) {

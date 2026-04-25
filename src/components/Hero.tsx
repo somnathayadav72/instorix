@@ -96,7 +96,8 @@ export default function Hero() {
       setTimeout(() => {
         const element = document.getElementById("result-section");
         if (element) {
-          const y = element.getBoundingClientRect().top + window.scrollY - 100;
+          // Adjust offset to account for sticky navbar and visual centering
+          const y = element.getBoundingClientRect().top + window.scrollY - 800;
           window.scrollTo({ top: y, behavior: "smooth" });
         }
       }, 100);

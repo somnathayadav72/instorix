@@ -24,6 +24,15 @@ export const runtime = 'nodejs';
 // Simple in-memory rate limiting
 const rateLimitMap = new Map<string, { count: number; timestamp: number }>();
 
+// Clean up old entries every 5 minutes to prevent memory leak
+setInterval(() => {
+  const now = Date.now();
+  const windowMs = 60 * 1000;
+  for (const [key, val] of rateLimitMap.entries()) {
+    if (now - val.timestamp > windowMs * 2) rateLimitMap.delete(key);
+  }
+}, 5 * 60 * 1000);
+
 function checkRateLimit(ip: string): boolean {
   const now = Date.now();
   const windowMs = 60 * 1000; // 1 minute
@@ -58,10 +67,36 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Anti-Leeching Protection
+    const referer = request.headers.get('referer') || '';
+    const origin = request.headers.get('origin') || '';
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://instorix.in';
+    
+    if (process.env.NODE_ENV === 'production' && !appUrl.includes('localhost')) {
+      const isAllowed = referer.startsWith(appUrl) || origin.startsWith(appUrl);
+      if (!isAllowed && (referer || origin)) {
+        return NextResponse.json(
+          { success: false, error: 'Unauthorized access.' },
+          { status: 403, headers: { 'Cache-Control': 'no-store' } }
+        );
+      }
+    }
+
     const body = await request.json();
     const { url } = body;
 
-    if (!url || typeof url !== 'string' || !url.includes('instagram.com')) {
+    // Strict Instagram URL validation — prevents instagram.com.evil.com tricks
+    let parsedUrl: URL;
+    try {
+      parsedUrl = new URL(url.startsWith('http') ? url : `https://${url}`);
+    } catch {
+      return NextResponse.json(
+        { success: false, error: 'Please enter a valid Instagram URL' },
+        { status: 400, headers: { 'Cache-Control': 'no-store' } }
+      );
+    }
+    const hostname = parsedUrl.hostname.replace(/^www\./, '');
+    if (hostname !== 'instagram.com') {
       return NextResponse.json(
         { success: false, error: 'Please enter a valid Instagram URL' },
         { status: 400, headers: { 'Cache-Control': 'no-store' } }
@@ -101,7 +136,7 @@ export async function POST(request: NextRequest) {
     if (isProfileUrl && username) {
       if (!process.env.INSTAGRAM_SESSION_ID) {
         return NextResponse.json(
-          { success: false, error: 'Downloading stories from a profile requires INSTAGRAM_SESSION_ID in your .env configuration.' },
+          { success: false, error: 'Downloading stories from a profile URL is not currently supported.' },
           { status: 401, headers: { 'Cache-Control': 'no-store' } }
         );
       }
@@ -331,10 +366,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const allowedOrigin = process.env.NEXT_PUBLIC_APP_URL || 'https://instorix.in';
     return NextResponse.json({ success: true, data: post }, {
       headers: {
         'Cache-Control': 'no-store',
-        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Origin': allowedOrigin,
       },
     });
 
