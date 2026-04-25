@@ -73,9 +73,10 @@ export default function MediaCard({ post }: { post: InstagramPost }) {
           <div className="w-full h-full rounded-full bg-white flex items-center justify-center overflow-hidden">
             {post.authorAvatar ? (
               <img
-                src={`/api/proxy?url=${encodeURIComponent(post.authorAvatar)}&inline=true`}
+                src={post.authorAvatar}
                 alt={post.author}
                 className="w-full h-full object-cover rounded-full"
+                referrerPolicy="no-referrer"
               />
             ) : (
               <span className="text-sm font-bold text-gray-700">
@@ -106,29 +107,39 @@ export default function MediaCard({ post }: { post: InstagramPost }) {
       {/* ── Media Viewer ── */}
       <div className="relative bg-black select-none" style={{ aspectRatio: "4/5" }}>
         {isVideo ? (
-          /* Video — no download control, custom styled */
+          /* Video — proxy needed for same-origin streaming */
           <video
             key={activeMedia.url}
             src={`/api/proxy?url=${encodeURIComponent(activeMedia.url)}&inline=true`}
             poster={
               activeMedia.thumbnail
-                ? `/api/proxy?url=${encodeURIComponent(activeMedia.thumbnail)}&inline=true`
+                ? activeMedia.thumbnail  /* show poster directly from CDN */
                 : undefined
             }
             className="w-full h-full object-contain"
             controls
             playsInline
             preload="metadata"
-            controlsList="nodownload"       /* hide browser download button */
-            onContextMenu={(e) => e.preventDefault()} /* disable right-click */
+            controlsList="nodownload"
+            onContextMenu={(e) => e.preventDefault()}
           />
         ) : (
+          /* Images: try direct CDN first (no CORS needed for img tags), fall back to proxy if CDN blocks */
           <img
             key={activeMedia.url}
-            src={`/api/proxy?url=${encodeURIComponent(activeMedia.url)}&inline=true`}
+            src={activeMedia.url}
             alt="Instagram post"
             className="w-full h-full object-contain"
             draggable={false}
+            referrerPolicy="no-referrer"
+            onError={(e) => {
+              const img = e.currentTarget;
+              // Only fall back once to avoid infinite loop
+              if (!img.dataset.proxyFallback) {
+                img.dataset.proxyFallback = 'true';
+                img.src = `/api/proxy?url=${encodeURIComponent(activeMedia.url)}&inline=true`;
+              }
+            }}
           />
         )}
 

@@ -70,20 +70,17 @@ export async function GET(request: NextRequest) {
     const fetchUrl = targetUrl.replace(/(stp=[^&]*)s640x640([^&]*)/g, '$1$2');
 
     const response = await fetch(fetchUrl, {
+      redirect: 'follow',
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
         'Referer': 'https://www.instagram.com/',
-        'Origin': 'https://www.instagram.com',
-        'Accept': 'image/avif,image/webp,image/apng,image/*,*/*;q=0.8',
+        'Accept': 'image/avif,image/webp,image/apng,image/*,video/*,*/*;q=0.8',
         'Accept-Language': 'en-US,en;q=0.9',
-        'sec-fetch-dest': 'image',
-        'sec-fetch-mode': 'no-cors',
-        'sec-fetch-site': 'cross-site',
       },
     });
 
     if (!response.ok) {
-      console.error(`Proxy upstream error: ${response.status} ${response.statusText} for ${fetchUrl}`);
+      console.error(`Proxy upstream error: ${response.status} ${response.statusText} for ${fetchUrl.substring(0, 120)}`);
       throw new Error(`Failed to fetch media: ${response.status} ${response.statusText}`);
     }
 
