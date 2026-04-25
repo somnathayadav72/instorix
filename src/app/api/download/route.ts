@@ -59,7 +59,9 @@ function checkRateLimit(ip: string): boolean {
 
 export async function POST(request: NextRequest) {
   try {
-    const ip = request.headers.get('x-forwarded-for') || '127.0.0.1';
+    // In production x-forwarded-for can be a comma-separated list; take the first (real client) IP
+    const rawIp = request.headers.get('x-forwarded-for') || '127.0.0.1';
+    const ip = rawIp.split(',')[0].trim();
     if (!checkRateLimit(ip)) {
       return NextResponse.json(
         { success: false, error: 'Too many requests. Please wait a moment and try again.' },
@@ -159,15 +161,19 @@ export async function POST(request: NextRequest) {
             });
             const items = storiesRes.data?.reel?.items || [];
             if (items.length > 0) {
-              items.forEach((item: any) => {
-                const isVideo = item.media_type === 2;
+              items.forEach((item: { media_type: number; image_versions2?: { candidates?: { url: string }[] }; video_versions?: { url: string }[] }) => {
+                const isVideoItem = item.media_type === 2;
                 const imageUrl = item.image_versions2?.candidates?.[0]?.url;
                 const videoUrl = item.video_versions?.[0]?.url;
-                mediaItems.push({
-                  url: isVideo ? videoUrl : imageUrl,
-                  type: isVideo ? 'video' : 'image',
-                  thumbnail: imageUrl
-                });
+                // Only push items where we have a valid URL
+                const mediaUrl = isVideoItem ? videoUrl : imageUrl;
+                if (mediaUrl) {
+                  mediaItems.push({
+                    url: mediaUrl,
+                    type: isVideoItem ? 'video' : 'image',
+                    thumbnail: imageUrl
+                  });
+                }
               });
               type = 'carousel';
               caption = `${username}'s Stories`;
@@ -385,11 +391,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const allowedOrigin = process.env.NEXT_PUBLIC_APP_URL || 'https://instorix.in';
+    // Allow both www. and non-www. variants of the app origin
+    const rawOrigin = process.env.NEXT_PUBLIC_APP_URL || 'https://instorix.in';
+    const allowedOrigin = rawOrigin.startsWith('https://www.') ? rawOrigin : rawOrigin.replace('https://', 'https://www.');
     return NextResponse.json({ success: true, data: post }, {
       headers: {
         'Cache-Control': 'no-store',
-        'Access-Control-Allow-Origin': allowedOrigin,
+        'Access-Control-Allow-Origin': '*', // CDN media URLs are fetched client-side via proxy; allow all
       },
     });
 

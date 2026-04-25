@@ -27,7 +27,9 @@ function checkRateLimit(ip: string): boolean {
 
 export async function GET(request: NextRequest) {
   // 1. Rate Limiting Protection
-  const ip = request.headers.get('x-forwarded-for') || '127.0.0.1';
+  // In production x-forwarded-for can be a comma-separated list; take the first (real client) IP
+  const rawIp = request.headers.get('x-forwarded-for') || '127.0.0.1';
+  const ip = rawIp.split(',')[0].trim();
   if (!checkRateLimit(ip)) {
     return new NextResponse('Too many requests', { status: 429 });
   }
@@ -111,7 +113,7 @@ export async function GET(request: NextRequest) {
         'Content-Type': contentType,
         'Content-Disposition': disposition,
         'Cache-Control': 'no-store',
-        'Access-Control-Allow-Origin': process.env.NEXT_PUBLIC_APP_URL || 'https://instorix.in',
+        'Access-Control-Allow-Origin': '*',
       },
     });
   } catch (error) {
