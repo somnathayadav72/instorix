@@ -12,21 +12,21 @@ export const metadata: Metadata = {
 };
 
 const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
-  <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
-    <h2 className="text-[15px] font-bold text-gray-900 mb-3">{title}</h2>
-    <div className="text-[14px] text-gray-600 leading-relaxed space-y-2">{children}</div>
+  <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-6 shadow-sm">
+    <h2 className="text-[15px] font-bold text-gray-900 dark:text-gray-100 mb-3">{title}</h2>
+    <div className="text-[14px] text-gray-600 dark:text-gray-400 leading-relaxed space-y-2">{children}</div>
   </div>
 );
 
 export default function TermsPage() {
   return (
-    <main className="min-h-screen bg-[#fafafa] pt-20 pb-20 px-4">
+    <main className="min-h-screen pt-20 pb-20 px-4 bg-gray-50 dark:bg-gray-950">
       <div className="max-w-lg mx-auto">
 
         {/* Back nav */}
         <Link
           href="/"
-          className="inline-flex items-center gap-1.5 text-[13px] text-gray-400 hover:text-gray-700 transition-colors mb-8"
+          className="inline-flex items-center gap-1.5 text-[13px] text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors mb-8"
         >
           ← Back
         </Link>
@@ -34,10 +34,10 @@ export default function TermsPage() {
         {/* Header */}
         <div className="flex flex-col items-center text-center mb-8">
           <InstorixLogo variant="icon" size={48} className="mb-4 rounded-2xl shadow-md" />
-          <h1 className="text-2xl font-extrabold tracking-tight text-gray-900 mb-1">
+          <h1 className="text-2xl font-extrabold tracking-tight text-gray-900 dark:text-gray-100 mb-1">
             Terms of Service
           </h1>
-          <p className="text-[13px] text-gray-400">
+          <p className="text-[13px] text-gray-400 dark:text-gray-500">
             Last updated{" "}
             {new Date().toLocaleDateString("en-US", {
               year: "numeric",

@@ -43,11 +43,9 @@ export default function Hero() {
   const validate = (value: string) => {
     if (!value.trim()) { setIsValid(null); setError(""); return; }
     if (!value.includes("instagram.com")) { setIsValid(false); setError(""); return; }
-    if (isProfileUrl(value)) {
-      setIsValid(false);
-      setError("Profile links can't be downloaded. Paste a post, reel, or story link.");
-      return;
-    }
+    // Removed profile url block so users can fetch HD Profile Pictures
+    setIsValid(true);
+    setError("");
     setIsValid(true);
     setError("");
   };
@@ -73,10 +71,8 @@ export default function Hero() {
   const handleSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!url.trim()) { setError("Please enter a URL"); return; }
-    if (isProfileUrl(url)) {
-      setError("Profile links can't be downloaded. Paste a post, reel, or story link.");
-      return;
-    }
+    // Allow profile urls to fetch HD Profile Pictures
+    if (!isValid) { setError("Please enter a valid Instagram URL"); return; }
     if (!isValid) { setError("Please enter a valid Instagram URL"); return; }
 
     setLoading(true);
@@ -112,14 +108,14 @@ export default function Hero() {
   const hasContent = loading || result;
 
   return (
-    <section className={`relative flex flex-col items-center px-4 overflow-hidden bg-[#fafafa] transition-all duration-500
-      ${hasContent ? 'pt-24 pb-20' : 'min-h-screen justify-center pt-6 pb-10'}`}>
+    <section className={`relative flex flex-col items-center px-4 overflow-hidden bg-[#fafafa] dark:bg-gray-950 transition-all duration-500
+      ${hasContent ? 'pt-24 pb-20' : 'min-h-screen pt-24 pb-10'}`}>
       {/* Subtle background glow */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-[600px] h-[600px] rounded-full bg-gradient-to-br from-[#F77737]/10 via-[#E1306C]/10 to-[#833AB4]/10 blur-3xl" />
       </div>
 
-      <div className="relative z-10 w-full max-w-lg mx-auto flex flex-col items-center">
+      <div className={`relative z-10 w-full max-w-lg mx-auto flex flex-col items-center ${!hasContent ? 'my-auto' : ''}`}>
 
         {/* ── Logo mark ── */}
         <motion.div
@@ -138,14 +134,14 @@ export default function Hero() {
           transition={{ delay: 0.1 }}
           className="text-center mb-8"
         >
-          <h1 className="text-4xl font-extrabold tracking-tight text-gray-900 mb-2">
+          <h1 className="text-4xl font-extrabold tracking-tight text-gray-900 dark:text-white mb-2">
             Download any Instagram{" "}
             <span className={`bg-gradient-to-r ${IG_GRADIENT} bg-clip-text text-transparent`}>
               content
             </span>
           </h1>
-          <p className="text-[15px] text-gray-500 font-medium">
-            Reels · Posts · Stories · Carousels — no login needed
+          <p className="text-[15px] text-gray-500 dark:text-gray-400 font-medium max-w-sm mx-auto">
+            Reels · Posts · Stories · Profile Pics · Audio
           </p>
         </motion.div>
 
@@ -154,7 +150,7 @@ export default function Hero() {
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 0.18 }}
-          className="w-full bg-white border border-gray-200 rounded-3xl shadow-lg p-5 mb-6"
+          className="w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-3xl shadow-lg p-5 mb-6"
         >
           <form onSubmit={handleSubmit} className="space-y-3">
             {/* URL field */}
@@ -167,11 +163,11 @@ export default function Hero() {
                 placeholder="Paste Instagram link here…"
                 value={url}
                 onChange={handleUrlChange}
-                className={`w-full h-12 pl-11 pr-[90px] rounded-2xl text-[14px] bg-gray-50 border outline-none transition-all
-                  placeholder:text-gray-300 text-gray-800
+                className={`w-full h-12 pl-11 pr-[110px] rounded-2xl text-[14px] bg-gray-50 dark:bg-gray-800 border outline-none transition-all
+                  placeholder:text-gray-300 dark:placeholder:text-gray-500 text-gray-800 dark:text-gray-100
                   ${isValid === false ? "border-red-400 focus:ring-2 focus:ring-red-200" :
                     isValid === true  ? "border-green-400 focus:ring-2 focus:ring-green-200" :
-                    "border-gray-200 focus:ring-2 focus:ring-[#E1306C]/20 focus:border-[#E1306C]/60"}`}
+                    "border-gray-200 dark:border-gray-700 focus:ring-2 focus:ring-[#E1306C]/20 focus:border-[#E1306C]/60"}`}
               />
               <div className="absolute right-2 flex items-center gap-1.5">
                 {isValid === true  && <CheckCircle2 className="w-4 h-4 text-green-500 shrink-0" />}
@@ -179,7 +175,7 @@ export default function Hero() {
                 <button
                   type="button"
                   onClick={handlePasteClick}
-                  className="flex items-center gap-1 bg-gray-100 hover:bg-gray-200 text-gray-500 text-[11px] font-semibold px-2.5 py-1.5 rounded-xl transition shrink-0"
+                  className="cursor-pointer flex items-center gap-1 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-500 dark:text-gray-300 text-[11px] font-semibold px-2.5 py-1.5 rounded-xl transition shrink-0"
                 >
                   {pasted ? <CheckCircle2 className="w-3 h-3" /> : <ClipboardPaste className="w-3 h-3" />}
                   {pasted ? "Pasted" : "Paste"}
@@ -206,7 +202,7 @@ export default function Hero() {
             <button
               type="submit"
               disabled={loading || !isValid}
-              className={`w-full h-12 rounded-2xl font-semibold text-[15px] text-white flex items-center justify-center gap-2 transition-all
+              className={`cursor-pointer w-full h-12 rounded-2xl font-semibold text-[15px] text-white flex items-center justify-center gap-2 transition-all
                 bg-gradient-to-r ${IG_GRADIENT}
                 disabled:opacity-50 disabled:cursor-not-allowed
                 hover:opacity-95 active:scale-[0.98] shadow-md`}
@@ -227,17 +223,17 @@ export default function Hero() {
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0 }}
-              className="w-full bg-white border border-gray-100 rounded-3xl shadow-sm p-5 mb-6"
+              className="w-full bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-3xl shadow-sm p-5 mb-6"
             >
               <div className="flex items-center gap-3 mb-4">
-                <div className="w-9 h-9 rounded-full bg-gray-100 animate-pulse" />
+                <div className="w-9 h-9 rounded-full bg-gray-100 dark:bg-gray-800 animate-pulse" />
                 <div className="flex flex-col gap-1.5">
-                  <div className="w-28 h-3 rounded bg-gray-100 animate-pulse" />
-                  <div className="w-16 h-2.5 rounded bg-gray-100 animate-pulse" />
+                  <div className="w-28 h-3 rounded bg-gray-100 dark:bg-gray-800 animate-pulse" />
+                  <div className="w-16 h-2.5 rounded bg-gray-100 dark:bg-gray-800 animate-pulse" />
                 </div>
               </div>
-              <div className="w-full rounded-2xl bg-gray-100 animate-pulse mb-4" style={{ aspectRatio: "4/5" }} />
-              <div className="w-full h-11 rounded-2xl bg-gray-100 animate-pulse" />
+              <div className="w-full rounded-2xl bg-gray-100 dark:bg-gray-800 animate-pulse mb-4" style={{ aspectRatio: "4/5" }} />
+              <div className="w-full h-11 rounded-2xl bg-gray-100 dark:bg-gray-800 animate-pulse" />
             </motion.div>
           )}
         </AnimatePresence>
@@ -262,7 +258,7 @@ export default function Hero() {
                 <span>Recent</span>
                 <button
                   onClick={clearHistory}
-                  className="flex items-center gap-1 text-gray-300 hover:text-red-400 transition-colors normal-case tracking-normal font-medium text-[11px]"
+                  className="cursor-pointer flex items-center gap-1 text-gray-300 hover:text-red-400 transition-colors normal-case tracking-normal font-medium text-[11px]"
                 >
                   <Trash2 className="w-3 h-3" /> Clear
                 </button>
@@ -272,9 +268,9 @@ export default function Hero() {
                   <button
                     key={`${p.id}-${i}`}
                     onClick={() => setResult(p)}
-                    className="shrink-0 w-[100px] rounded-2xl overflow-hidden border border-gray-100 bg-white shadow-sm hover:shadow-md transition group"
+                    className="cursor-pointer shrink-0 w-[100px] rounded-2xl overflow-hidden border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm hover:shadow-md transition group"
                   >
-                    <div className="w-full h-[100px] bg-gray-100 overflow-hidden">
+                    <div className="w-full h-[100px] bg-gray-100 dark:bg-gray-800 overflow-hidden">
                       <img
                         src={p.mediaItems[0]?.thumbnail
                           ? `/api/proxy?url=${encodeURIComponent(p.mediaItems[0].thumbnail)}&inline=true`
@@ -284,8 +280,8 @@ export default function Hero() {
                       />
                     </div>
                     <div className="p-2">
-                      <p className="text-[10px] font-semibold text-gray-800 truncate">@{p.author}</p>
-                      <p className="text-[9px] text-gray-400 capitalize">{p.type}</p>
+                      <p className="text-[10px] font-semibold text-gray-800 dark:text-gray-200 truncate">@{p.author}</p>
+                      <p className="text-[9px] text-gray-400 dark:text-gray-500 capitalize">{p.type}</p>
                     </div>
                   </button>
                 ))}

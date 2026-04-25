@@ -80,13 +80,17 @@ export async function GET(request: NextRequest) {
 
     const rawContentType = response.headers.get('content-type') || 'application/octet-stream';
     const isVideo = rawContentType.includes('video') || targetUrl.includes('.mp4');
+    
+    const audioOnly = searchParams.get('audioOnly') === 'true';
+
     // Force correct MIME so browsers don't content-sniff to image/jpeg
-    const contentType = isVideo ? 'video/mp4' : 'image/jpeg';
-    const extension = isVideo ? 'mp4' : 'jpg';
+    // If audioOnly, force audio/mpeg so it plays as an MP3 audio file
+    const contentType = audioOnly ? 'audio/mpeg' : isVideo ? 'video/mp4' : 'image/jpeg';
+    const extension = audioOnly ? 'mp3' : isVideo ? 'mp4' : 'jpg';
 
     const shortcodeParam = searchParams.get('shortcode') || 'media';
     const defaultFilename = `instorix_${shortcodeParam}.${extension}`;
-    // Prefer filename passed explicitly from the client (already has correct ext)
+    // Prefer filename passed explicitly from the client
     const rawFilename = searchParams.get('filename') || defaultFilename;
     // 3. Header Injection & Path Traversal Protection
     // Strip out newlines, carriage returns, quotes, and path separators

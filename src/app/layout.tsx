@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import Script from "next/script";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import { ThemeProvider } from "@/components/ThemeProvider";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
@@ -120,6 +121,7 @@ export const metadata: Metadata = {
     creator: "@instorix",
     site: "@instorix",
   },
+  manifest: "/manifest.json",
   alternates: {
     canonical: APP_URL,
     languages: {
@@ -264,7 +266,7 @@ export default function RootLayout({
   };
 
   return (
-    <html lang="en" className="scroll-smooth">
+    <html lang="en" className="scroll-smooth" suppressHydrationWarning>
       <head>
         <script
           type="application/ld+json"
@@ -279,8 +281,15 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
         />
       </head>
-      <body className={`${inter.variable} font-sans antialiased`}>
-        {children}
+      <body className={`${inter.variable} font-sans antialiased dark:bg-gray-950 dark:text-gray-50`}>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          {children}
+        </ThemeProvider>
         <Analytics />
         <SpeedInsights />
         {/* Google AdSense */}

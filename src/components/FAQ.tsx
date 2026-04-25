@@ -40,17 +40,17 @@ export default function FAQ() {
   ];
 
   return (
-    <section className="py-20 bg-white">
+    <section className="py-20 bg-white dark:bg-gray-900">
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h2 className="text-3xl font-bold text-center text-gray-900 mb-12">Frequently Asked Questions</h2>
+        <h2 className="text-3xl font-bold text-center text-gray-900 dark:text-gray-100 mb-12">Frequently Asked Questions</h2>
         
         <Accordion className="w-full">
           {faqs.map((faq, index) => (
-            <AccordionItem key={index} value={`item-${index}`} className="border-b border-gray-100 py-2">
-              <AccordionTrigger className="text-left font-medium text-gray-900 hover:text-insta-pink transition-colors">
+            <AccordionItem key={index} value={`item-${index}`} className="border-b border-gray-100 dark:border-gray-800 py-2">
+              <AccordionTrigger className="text-left font-medium text-gray-900 dark:text-gray-100 hover:text-insta-pink transition-colors">
                 {faq.q}
               </AccordionTrigger>
-              <AccordionContent className="text-gray-600 leading-relaxed pt-2 pb-4">
+              <AccordionContent className="text-gray-600 dark:text-gray-400 leading-relaxed pt-2 pb-4">
                 {faq.a}
               </AccordionContent>
             </AccordionItem>

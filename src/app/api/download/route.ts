@@ -73,7 +73,8 @@ export async function POST(request: NextRequest) {
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://instorix.in';
     
     if (process.env.NODE_ENV === 'production' && !appUrl.includes('localhost')) {
-      const isAllowed = referer.startsWith(appUrl) || origin.startsWith(appUrl);
+      const cleanAppHost = appUrl.replace(/^https?:\/\/(www\.)?/, '');
+      const isAllowed = referer.includes(cleanAppHost) || origin.includes(cleanAppHost);
       if (!isAllowed && (referer || origin)) {
         return NextResponse.json(
           { success: false, error: 'Unauthorized access.' },
@@ -134,58 +135,76 @@ export async function POST(request: NextRequest) {
     // Profile URL Strategy: Fetch Stories (Requires Session ID)
     // ─────────────────────────────────────────────────────────────
     if (isProfileUrl && username) {
-      if (!process.env.INSTAGRAM_SESSION_ID) {
-        return NextResponse.json(
-          { success: false, error: 'Downloading stories from a profile URL is not currently supported.' },
-          { status: 401, headers: { 'Cache-Control': 'no-store' } }
-        );
-      }
       try {
-        // 1. Get user ID
+        // 1. Get user ID & Profile Pic
         const profileRes = await axios.get(`https://www.instagram.com/api/v1/users/web_profile_info/?username=${username}`, {
           headers: { ...headers, 'X-IG-App-ID': '936619743392459' },
           timeout: 8000
         });
-        const userId = profileRes.data?.data?.user?.id;
         
-        if (userId) {
-          // 2. Fetch stories feed
-          const storiesRes = await axios.get(`https://www.instagram.com/api/v1/feed/user/${userId}/story/`, {
-            headers,
-            timeout: 8000
-          });
-          const items = storiesRes.data?.reel?.items || [];
-          if (items.length > 0) {
-            const mediaItems: DirectMediaItem[] = [];
-            items.forEach((item: any) => {
-              const isVideo = item.media_type === 2;
-              const imageUrl = item.image_versions2?.candidates?.[0]?.url;
-              const videoUrl = item.video_versions?.[0]?.url;
-              mediaItems.push({
-                url: isVideo ? videoUrl : imageUrl,
-                type: isVideo ? 'video' : 'image',
-                thumbnail: imageUrl
-              });
+        const user = profileRes.data?.data?.user;
+        const userId = user?.id;
+        const hdProfilePic = user?.hd_profile_pic_url_info?.url || user?.profile_pic_url_hd || user?.profile_pic_url;
+        
+        // 2. Fetch stories feed if session exists
+        let mediaItems: DirectMediaItem[] = [];
+        let type: 'post' | 'carousel' = 'post';
+        let caption = `${username}'s Profile Picture`;
+
+        if (userId && process.env.INSTAGRAM_SESSION_ID) {
+          try {
+            const storiesRes = await axios.get(`https://www.instagram.com/api/v1/feed/user/${userId}/story/`, {
+              headers,
+              timeout: 8000
             });
-            post = {
-              id: username,
-              shortcode: username,
-              type: 'carousel', // Treat stories as a carousel of items
-              author: username,
-              caption: `${username}'s Stories`,
-              mediaItems
-            };
-          } else {
-             return NextResponse.json(
-              { success: false, error: 'No active stories found for this user.' },
-              { status: 404, headers: { 'Cache-Control': 'no-store' } }
-            );
+            const items = storiesRes.data?.reel?.items || [];
+            if (items.length > 0) {
+              items.forEach((item: any) => {
+                const isVideo = item.media_type === 2;
+                const imageUrl = item.image_versions2?.candidates?.[0]?.url;
+                const videoUrl = item.video_versions?.[0]?.url;
+                mediaItems.push({
+                  url: isVideo ? videoUrl : imageUrl,
+                  type: isVideo ? 'video' : 'image',
+                  thumbnail: imageUrl
+                });
+              });
+              type = 'carousel';
+              caption = `${username}'s Stories`;
+            }
+          } catch (storyErr) {
+            console.warn('Could not fetch stories, falling back to DP:', storyErr instanceof Error ? storyErr.message : String(storyErr));
           }
         }
+
+        // 3. If no stories found or no session, return the HD Profile Pic
+        if (mediaItems.length === 0 && hdProfilePic) {
+          mediaItems.push({
+            url: hdProfilePic,
+            type: 'image',
+            thumbnail: hdProfilePic
+          });
+          type = 'post';
+        } else if (mediaItems.length === 0 && !hdProfilePic) {
+           return NextResponse.json(
+            { success: false, error: 'Could not find profile information or stories.' },
+            { status: 404, headers: { 'Cache-Control': 'no-store' } }
+          );
+        }
+
+        post = {
+          id: username,
+          shortcode: username,
+          type,
+          author: username,
+          caption,
+          authorAvatar: hdProfilePic,
+          mediaItems
+        };
       } catch (error) {
-        console.warn('Profile stories fetch failed:', error instanceof Error ? error.message : String(error));
+        console.warn('Profile fetch failed:', error instanceof Error ? error.message : String(error));
         return NextResponse.json(
-          { success: false, error: 'Failed to fetch stories. The account might be private or the session expired.' },
+          { success: false, error: 'Failed to fetch profile. The account might be private.' },
           { status: 500, headers: { 'Cache-Control': 'no-store' } }
         );
       }

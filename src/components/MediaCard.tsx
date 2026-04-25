@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Download, ExternalLink, Heart, ChevronLeft, ChevronRight, Play, Image as ImageIcon, Film, Copy, Hash, Check } from "lucide-react";
+import { Download, ExternalLink, Heart, ChevronLeft, ChevronRight, Play, Image as ImageIcon, Film, Copy, Hash, Check, Music } from "lucide-react";
 import { InstagramPost, MediaItem } from "@/types/instagram";
 
 const IG_GRADIENT = "from-[#F77737] via-[#E1306C] to-[#833AB4]";
@@ -17,11 +17,11 @@ export default function MediaCard({ post }: { post: InstagramPost }) {
   const isVideo = activeMedia?.type === "video";
   const isCarousel = post.mediaItems.length > 1;
 
-  const handleDownload = (media: MediaItem, index?: number) => {
-    const ext = media.type === "video" ? "mp4" : "jpg";
+  const handleDownload = (media: MediaItem, index?: number, audioOnly = false) => {
+    const ext = audioOnly ? "mp3" : media.type === "video" ? "mp4" : "jpg";
     const suffix = index !== undefined ? `_${index + 1}` : "";
     const filename = `instorix_${post.shortcode}${suffix}.${ext}`;
-    const proxyUrl = `/api/proxy?url=${encodeURIComponent(media.url)}&shortcode=${post.shortcode}&filename=${encodeURIComponent(filename)}`;
+    const proxyUrl = `/api/proxy?url=${encodeURIComponent(media.url)}&shortcode=${post.shortcode}&filename=${encodeURIComponent(filename)}${audioOnly ? '&audioOnly=true' : ''}`;
     const a = document.createElement("a");
     a.href = proxyUrl;
     a.download = filename;
@@ -62,10 +62,10 @@ export default function MediaCard({ post }: { post: InstagramPost }) {
       initial={{ opacity: 0, y: 24 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ type: "spring", stiffness: 220, damping: 22 }}
-      className="bg-white border border-gray-200 rounded-3xl overflow-hidden shadow-xl max-w-[480px] mx-auto w-full"
+      className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-3xl overflow-hidden shadow-xl max-w-[480px] mx-auto w-full"
     >
       {/* ── Header (Instagram-style) ── */}
-      <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-100">
+      <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-100 dark:border-gray-800">
         {/* Avatar */}
         <div
           className={`w-9 h-9 rounded-full bg-gradient-to-tr ${IG_GRADIENT} p-[2px] shrink-0`}
@@ -86,11 +86,11 @@ export default function MediaCard({ post }: { post: InstagramPost }) {
         </div>
 
         <div className="flex-1 min-w-0">
-          <p className="text-[13px] font-semibold text-gray-900 truncate">
+          <p className="text-[13px] font-semibold text-gray-900 dark:text-gray-100 truncate">
             @{post.author}
           </p>
           {post.timestamp && (
-            <p className="text-[11px] text-gray-400">{post.timestamp}</p>
+            <p className="text-[11px] text-gray-400 dark:text-gray-500">{post.timestamp}</p>
           )}
         </div>
 
@@ -147,14 +147,14 @@ export default function MediaCard({ post }: { post: InstagramPost }) {
             <button
               onClick={prev}
               disabled={activeMediaIndex === 0}
-              className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/90 shadow flex items-center justify-center disabled:opacity-30 hover:bg-white transition"
+              className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/90 shadow flex items-center justify-center disabled:opacity-30 hover:bg-white transition cursor-pointer disabled:cursor-not-allowed"
             >
               <ChevronLeft className="w-4 h-4 text-gray-800" />
             </button>
             <button
               onClick={next}
               disabled={activeMediaIndex === post.mediaItems.length - 1}
-              className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/90 shadow flex items-center justify-center disabled:opacity-30 hover:bg-white transition"
+              className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/90 shadow flex items-center justify-center disabled:opacity-30 hover:bg-white transition cursor-pointer disabled:cursor-not-allowed"
             >
               <ChevronRight className="w-4 h-4 text-gray-800" />
             </button>
@@ -165,7 +165,7 @@ export default function MediaCard({ post }: { post: InstagramPost }) {
                 <button
                   key={i}
                   onClick={() => setActiveMediaIndex(i)}
-                  className={`w-1.5 h-1.5 rounded-full transition-all ${
+                  className={`cursor-pointer w-1.5 h-1.5 rounded-full transition-all ${
                     i === activeMediaIndex
                       ? "bg-white w-3"
                       : "bg-white/50"
@@ -181,7 +181,7 @@ export default function MediaCard({ post }: { post: InstagramPost }) {
       <div className="px-4 pt-3 pb-4 space-y-3">
         {/* Stats row */}
         {(post.likeCount ?? 0) > 0 && (
-          <div className="flex items-center gap-1 text-[13px] font-semibold text-gray-800">
+          <div className="flex items-center gap-1 text-[13px] font-semibold text-gray-800 dark:text-gray-200">
             <Heart className="w-4 h-4 fill-[#E1306C] text-[#E1306C]" />
             {post.likeCount?.toLocaleString()} likes
           </div>
@@ -189,40 +189,38 @@ export default function MediaCard({ post }: { post: InstagramPost }) {
 
         {/* Caption */}
         {post.caption && (
-          <div className="text-[13px] text-gray-700 leading-relaxed">
-            <span className="font-semibold text-gray-900 mr-1">@{post.author}</span>
+          <div className="text-[13px] text-gray-700 dark:text-gray-300 leading-relaxed">
+            <span className="font-semibold text-gray-900 dark:text-gray-100 mr-1">@{post.author}</span>
             {expanded ? post.caption : captionTrimmed}
             {(post.caption?.length ?? 0) > 120 && (
               <button
                 onClick={() => setExpanded(!expanded)}
-                className="text-gray-400 ml-1 hover:text-gray-600 text-[12px]"
+                className="cursor-pointer text-gray-400 dark:text-gray-500 ml-1 hover:text-gray-600 dark:hover:text-gray-300 text-[12px]"
               >
                 {expanded ? "less" : "more"}
               </button>
             )}
             
-            {/* Action Tools for Caption */}
-            {expanded && (
-              <div className="flex gap-2 mt-3 mb-1">
+            {/* Action Tools for Caption (Always Visible) */}
+            <div className="flex gap-2 mt-3 mb-1">
+              <button
+                onClick={handleCopyCaption}
+                className="cursor-pointer flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 text-[12px] font-medium hover:bg-gray-200 dark:hover:bg-gray-700 transition"
+              >
+                {copiedCaption ? <Check className="w-3.5 h-3.5 text-green-600 dark:text-green-400" /> : <Copy className="w-3.5 h-3.5 text-gray-500 dark:text-gray-400" />}
+                {copiedCaption ? "Copied!" : "Copy Caption"}
+              </button>
+              
+              {(post.caption?.match(/#[\w]+/g) || []).length > 0 && (
                 <button
-                  onClick={handleCopyCaption}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-100 text-gray-700 text-[12px] font-medium hover:bg-gray-200 transition"
+                  onClick={handleCopyHashtags}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 text-[12px] font-medium hover:bg-gray-200 dark:hover:bg-gray-700 transition"
                 >
-                  {copiedCaption ? <Check className="w-3.5 h-3.5 text-green-600" /> : <Copy className="w-3.5 h-3.5 text-gray-500" />}
-                  {copiedCaption ? "Copied!" : "Copy Caption"}
+                  {copiedHashtags ? <Check className="w-3.5 h-3.5 text-green-600 dark:text-green-400" /> : <Hash className="w-3.5 h-3.5 text-gray-500 dark:text-gray-400" />}
+                  {copiedHashtags ? "Copied!" : "Extract Hashtags"}
                 </button>
-                
-                {(post.caption?.match(/#[\w]+/g) || []).length > 0 && (
-                  <button
-                    onClick={handleCopyHashtags}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-100 text-gray-700 text-[12px] font-medium hover:bg-gray-200 transition"
-                  >
-                    {copiedHashtags ? <Check className="w-3.5 h-3.5 text-green-600" /> : <Hash className="w-3.5 h-3.5 text-gray-500" />}
-                    {copiedHashtags ? "Copied!" : "Extract Hashtags"}
-                  </button>
-                )}
-              </div>
-            )}
+              )}
+            </div>
           </div>
         )}
 
@@ -232,7 +230,7 @@ export default function MediaCard({ post }: { post: InstagramPost }) {
             <div className="flex gap-2">
               <button
                 onClick={() => handleDownload(activeMedia, activeMediaIndex)}
-                className={`flex-1 flex items-center justify-center gap-2 h-11 rounded-2xl bg-gradient-to-r ${IG_GRADIENT} text-white font-semibold text-[13px] hover:opacity-90 transition-opacity shadow-sm`}
+                className={`cursor-pointer flex-1 flex items-center justify-center gap-2 h-11 rounded-2xl bg-gradient-to-r ${IG_GRADIENT} text-white font-semibold text-[13px] hover:opacity-90 transition-opacity shadow-sm`}
               >
                 <Download className="w-4 h-4" />
                 Download This ({activeMediaIndex + 1}/{post.mediaItems.length})
@@ -243,19 +241,31 @@ export default function MediaCard({ post }: { post: InstagramPost }) {
                     setTimeout(() => handleDownload(m, i), i * 600)
                   )
                 }
-                className="flex items-center justify-center gap-1.5 h-11 px-4 rounded-2xl border-2 border-gray-200 text-gray-700 font-semibold text-[13px] hover:border-gray-300 hover:bg-gray-50 transition"
+                className="cursor-pointer flex items-center justify-center gap-1.5 h-11 px-4 rounded-2xl border-2 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 font-semibold text-[13px] hover:border-gray-300 dark:hover:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 transition"
               >
                 All
               </button>
             </div>
           ) : (
-            <button
-              onClick={() => handleDownload(post.mediaItems[0])}
-              className={`w-full flex items-center justify-center gap-2 h-12 rounded-2xl bg-gradient-to-r ${IG_GRADIENT} text-white font-semibold text-base hover:opacity-90 transition-opacity shadow-md`}
-            >
-              <Download className="w-5 h-5" />
-              Download HD
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={() => handleDownload(post.mediaItems[0])}
+                className={`cursor-pointer flex-1 flex items-center justify-center gap-2 h-12 rounded-2xl bg-gradient-to-r ${IG_GRADIENT} text-white font-semibold text-[15px] hover:opacity-90 transition-opacity shadow-md`}
+              >
+                <Download className="w-5 h-5" />
+                Download HD
+              </button>
+              {post.mediaItems[0].type === "video" && (
+                <button
+                  onClick={() => handleDownload(post.mediaItems[0], undefined, true)}
+                  className="cursor-pointer flex items-center justify-center gap-1.5 h-12 px-4 rounded-2xl border-2 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 font-semibold text-[14px] hover:border-gray-300 dark:hover:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 transition shadow-sm"
+                  title="Download Audio Only (MP3)"
+                >
+                  <Music className="w-5 h-5" />
+                  MP3
+                </button>
+              )}
+            </div>
           )}
 
           {/* Open on IG */}

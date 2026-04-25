@@ -61,7 +61,7 @@ export default function InstorixLogo({
       {icon}
       <span
         style={{ fontSize: Math.round(size * 0.65), lineHeight: 1 }}
-        className="font-extrabold tracking-tight text-gray-900"
+        className="font-extrabold tracking-tight text-gray-900 dark:text-white"
       >
         Instorix
       </span>
