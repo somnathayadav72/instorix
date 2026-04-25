@@ -59,21 +59,27 @@ export default function Hero() {
     try {
       const text = await navigator.clipboard.readText();
       if (!text.trim()) return;
-      setUrl(text.trim());
-      validate(text.trim());
+      const pastedText = text.trim();
+      setUrl(pastedText);
+      validate(pastedText);
       setPasted(true);
       setTimeout(() => setPasted(false), 1500);
+
+      if (pastedText.includes("instagram.com")) {
+        handleSubmit(undefined, pastedText);
+      }
     } catch {
       toast.error("Couldn't read clipboard. Please paste manually.");
     }
   };
 
-  const handleSubmit = async (e?: React.FormEvent) => {
+  const handleSubmit = async (e?: React.FormEvent, overrideUrl?: string) => {
     if (e) e.preventDefault();
-    if (!url.trim()) { setError("Please enter a URL"); return; }
+    const targetUrl = overrideUrl || url;
+    if (!targetUrl.trim()) { setError("Please enter a URL"); return; }
+    
     // Allow profile urls to fetch HD Profile Pictures
-    if (!isValid) { setError("Please enter a valid Instagram URL"); return; }
-    if (!isValid) { setError("Please enter a valid Instagram URL"); return; }
+    if (!targetUrl.includes("instagram.com")) { setError("Please enter a valid Instagram URL"); return; }
 
     setLoading(true);
     setError("");
@@ -83,7 +89,7 @@ export default function Hero() {
       const res = await fetch("/api/download", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url }),
+        body: JSON.stringify({ url: targetUrl }),
       });
       const data = await res.json();
       if (!res.ok || !data.success) throw new Error(data.error || "Failed to fetch media");
@@ -159,10 +165,16 @@ export default function Hero() {
                 <Link2 className="w-4 h-4" />
               </span>
               <input
-                type="text"
-                placeholder="Paste Instagram link here…"
+                type="url"
+                placeholder="Paste Instagram URL here..."
                 value={url}
                 onChange={handleUrlChange}
+                onPaste={(e) => {
+                  const text = e.clipboardData.getData("text").trim();
+                  if (text.includes("instagram.com")) {
+                    setTimeout(() => handleSubmit(undefined, text), 10);
+                  }
+                }}
                 className={`w-full h-12 pl-11 pr-[110px] rounded-2xl text-[14px] bg-gray-50 dark:bg-gray-800 border outline-none transition-all
                   placeholder:text-gray-300 dark:placeholder:text-gray-500 text-gray-800 dark:text-gray-100
                   ${isValid === false ? "border-red-400 focus:ring-2 focus:ring-red-200" :

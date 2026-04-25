@@ -2,8 +2,11 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Download, ExternalLink, Heart, ChevronLeft, ChevronRight, Play, Image as ImageIcon, Film, Copy, Hash, Check, Music } from "lucide-react";
+import { Download, ExternalLink, Heart, ChevronLeft, ChevronRight, Play, Image as ImageIcon, Film, Copy, Hash, Check, Music, Scissors } from "lucide-react";
 import { InstagramPost, MediaItem } from "@/types/instagram";
+import dynamic from "next/dynamic";
+
+const VideoTrimmer = dynamic(() => import("@/components/VideoTrimmer"), { ssr: false });
 
 const IG_GRADIENT = "from-[#F77737] via-[#E1306C] to-[#833AB4]";
 
@@ -12,6 +15,7 @@ export default function MediaCard({ post }: { post: InstagramPost }) {
   const [expanded, setExpanded] = useState(false);
   const [copiedCaption, setCopiedCaption] = useState(false);
   const [copiedHashtags, setCopiedHashtags] = useState(false);
+  const [showTrimmer, setShowTrimmer] = useState(false);
 
   const activeMedia = post.mediaItems[activeMediaIndex];
   const isVideo = activeMedia?.type === "video";
@@ -58,6 +62,7 @@ export default function MediaCard({ post }: { post: InstagramPost }) {
       : post.caption;
 
   return (
+    <>
     <motion.div
       initial={{ opacity: 0, y: 24 }}
       animate={{ opacity: 1, y: 0 }}
@@ -258,26 +263,40 @@ export default function MediaCard({ post }: { post: InstagramPost }) {
               </button>
             </div>
           ) : (
-            <div className="flex gap-2">
+            <div className="space-y-2">
+              {/* Primary download */}
               <button
-                onClick={() => handleDownload(post.mediaItems[0])}
-                className={`cursor-pointer flex-1 flex items-center justify-center gap-2 h-12 rounded-2xl bg-gradient-to-r ${IG_GRADIENT} text-white font-semibold text-[15px] hover:opacity-90 transition-opacity shadow-md`}
+                onClick={() => handleDownload(activeMedia)}
+                className={`cursor-pointer w-full flex items-center justify-center gap-2 h-12 rounded-2xl bg-gradient-to-r ${IG_GRADIENT} text-white font-semibold text-[15px] hover:opacity-90 transition-opacity shadow-md`}
               >
                 <Download className="w-5 h-5" />
                 Download HD
               </button>
-              {post.mediaItems[0].type === "video" && (
-                <button
-                  onClick={() => handleDownload(post.mediaItems[0], undefined, true)}
-                  className="cursor-pointer flex items-center justify-center gap-1.5 h-12 px-4 rounded-2xl border-2 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 font-semibold text-[14px] hover:border-gray-300 dark:hover:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 transition shadow-sm"
-                  title="Download Audio Only (MP3)"
-                >
-                  <Music className="w-5 h-5" />
-                  MP3
-                </button>
+
+              {/* Secondary actions — only for videos/reels */}
+              {(activeMedia.type === "video" || post.type === "reel") && (
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handleDownload(activeMedia, undefined, true)}
+                    className="cursor-pointer flex-1 flex items-center justify-center gap-1.5 h-10 rounded-2xl border-2 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 font-semibold text-[13px] hover:border-gray-300 dark:hover:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 transition"
+                    title="Download Audio Only (MP3)"
+                  >
+                    <Music className="w-4 h-4" />
+                    MP3
+                  </button>
+                  <button
+                    onClick={() => setShowTrimmer(true)}
+                    className="cursor-pointer flex-1 flex items-center justify-center gap-1.5 h-10 rounded-2xl border-2 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 font-semibold text-[13px] hover:border-gray-300 dark:hover:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 transition"
+                    title="Trim Video"
+                  >
+                    <Scissors className="w-4 h-4" />
+                    Trim
+                  </button>
+                </div>
               )}
             </div>
           )}
+
 
           {/* Open on IG */}
           <a
@@ -292,5 +311,14 @@ export default function MediaCard({ post }: { post: InstagramPost }) {
         </div>
       </div>
     </motion.div>
+
+    {showTrimmer && post.mediaItems[0]?.type === "video" && (
+      <VideoTrimmer
+        proxyUrl={`/api/proxy?url=${encodeURIComponent(post.mediaItems[0].url)}&shortcode=${post.shortcode}&filename=${encodeURIComponent(`instorix_${post.shortcode}.mp4`)}&inline=true`}
+        filename={`instorix_${post.shortcode}.mp4`}
+        onClose={() => setShowTrimmer(false)}
+      />
+    )}
+    </>
   );
 }

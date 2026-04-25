@@ -1,6 +1,6 @@
 "use client";
 
-import { Play, Image as ImageIcon, Clock, Tv, Layers, UserCircle, Music } from "lucide-react";
+import { Play, Image as ImageIcon, Clock, Tv, Layers, UserCircle, Music, Scissors } from "lucide-react";
 
 export default function SupportedFormats() {
   const formats = [
@@ -52,6 +52,13 @@ export default function SupportedFormats() {
       badge: "MP3 • Audio",
       icon: <Music className="w-8 h-8 text-white" />,
       bg: "bg-teal-500",
+    },
+    {
+      title: "Video Trimmer",
+      desc: "Cut and trim any Reel or Video before downloading",
+      badge: "Trim • MP4",
+      icon: <Scissors className="w-8 h-8 text-white" />,
+      bg: "bg-rose-500",
     },
   ];
 

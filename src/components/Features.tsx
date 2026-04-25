@@ -36,8 +36,8 @@ export default function Features() {
       bg: "bg-pink-100 dark:bg-pink-900/30",
     },
     {
-      title: "Mobile Friendly",
-      desc: "Works perfectly on any device or browser",
+      title: "Installable App",
+      desc: "Install as a fast app on iOS, Android, or Desktop",
       icon: <Smartphone className="w-6 h-6 text-orange-600 dark:text-orange-400" />,
       bg: "bg-orange-100 dark:bg-orange-900/30",
     },
