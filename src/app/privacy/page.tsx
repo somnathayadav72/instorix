@@ -3,8 +3,12 @@ import type { Metadata } from "next";
 import InstorixLogo from "@/components/InstorixLogo";
 
 export const metadata: Metadata = {
-  title: "Privacy Policy — Instorix",
-  description: "Learn how Instorix handles your data and privacy.",
+  title: "Privacy Policy | Instorix — Free Instagram Downloader",
+  description: "Read Instorix's privacy policy. We do not collect, store or share your data. No login required, no cookies, no tracking.",
+  alternates: {
+    canonical: `${process.env.NEXT_PUBLIC_APP_URL || 'https://instorix.in'}/privacy`,
+  },
+  robots: { index: true, follow: true },
 };
 
 const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (

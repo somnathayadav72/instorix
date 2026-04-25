@@ -3,8 +3,12 @@ import type { Metadata } from "next";
 import InstorixLogo from "@/components/InstorixLogo";
 
 export const metadata: Metadata = {
-  title: "Terms of Service — Instorix",
-  description: "Terms and conditions for using Instorix.",
+  title: "Terms of Service | Instorix — Free Instagram Downloader",
+  description: "Read Instorix's terms of service. Instorix is free to use for personal, non-commercial purposes. Not affiliated with Instagram or Meta.",
+  alternates: {
+    canonical: `${process.env.NEXT_PUBLIC_APP_URL || 'https://instorix.in'}/terms`,
+  },
+  robots: { index: true, follow: true },
 };
 
 const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
