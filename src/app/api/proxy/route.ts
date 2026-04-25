@@ -39,7 +39,8 @@ export async function GET(request: NextRequest) {
   
   // Only enforce in production when APP_URL is defined as a real domain
   if (process.env.NODE_ENV === 'production' && !appUrl.includes('localhost')) {
-    const isAllowed = referer.startsWith(appUrl) || origin.startsWith(appUrl);
+    const cleanAppHost = appUrl.replace(/^https?:\/\/(www\.)?/, '');
+    const isAllowed = referer.includes(cleanAppHost) || origin.includes(cleanAppHost);
     if (!isAllowed && (referer || origin)) { // If headers are present but don't match our domain
       return new NextResponse('Forbidden', { status: 403 });
     }
@@ -68,14 +69,20 @@ export async function GET(request: NextRequest) {
 
     const response = await fetch(fetchUrl, {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
         'Referer': 'https://www.instagram.com/',
-        'Accept': '*/*',
+        'Origin': 'https://www.instagram.com',
+        'Accept': 'image/avif,image/webp,image/apng,image/*,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'sec-fetch-dest': 'image',
+        'sec-fetch-mode': 'no-cors',
+        'sec-fetch-site': 'cross-site',
       },
     });
 
     if (!response.ok) {
-      throw new Error(`Failed to fetch media: ${response.statusText}`);
+      console.error(`Proxy upstream error: ${response.status} ${response.statusText} for ${fetchUrl}`);
+      throw new Error(`Failed to fetch media: ${response.status} ${response.statusText}`);
     }
 
     const rawContentType = response.headers.get('content-type') || 'application/octet-stream';
