@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Download, ExternalLink, Heart, ChevronLeft, ChevronRight, Play, Image as ImageIcon, Film } from "lucide-react";
+import { Download, ExternalLink, Heart, ChevronLeft, ChevronRight, Play, Image as ImageIcon, Film, Copy, Hash, Check } from "lucide-react";
 import { InstagramPost, MediaItem } from "@/types/instagram";
 
 const IG_GRADIENT = "from-[#F77737] via-[#E1306C] to-[#833AB4]";
@@ -10,6 +10,8 @@ const IG_GRADIENT = "from-[#F77737] via-[#E1306C] to-[#833AB4]";
 export default function MediaCard({ post }: { post: InstagramPost }) {
   const [activeMediaIndex, setActiveMediaIndex] = useState(0);
   const [expanded, setExpanded] = useState(false);
+  const [copiedCaption, setCopiedCaption] = useState(false);
+  const [copiedHashtags, setCopiedHashtags] = useState(false);
 
   const activeMedia = post.mediaItems[activeMediaIndex];
   const isVideo = activeMedia?.type === "video";
@@ -26,6 +28,25 @@ export default function MediaCard({ post }: { post: InstagramPost }) {
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
+  };
+
+  const handleCopyCaption = () => {
+    if (post.caption) {
+      navigator.clipboard.writeText(post.caption);
+      setCopiedCaption(true);
+      setTimeout(() => setCopiedCaption(false), 2000);
+    }
+  };
+
+  const handleCopyHashtags = () => {
+    if (post.caption) {
+      const hashtags = post.caption.match(/#[\w]+/g) || [];
+      if (hashtags.length > 0) {
+        navigator.clipboard.writeText(hashtags.join(" "));
+        setCopiedHashtags(true);
+        setTimeout(() => setCopiedHashtags(false), 2000);
+      }
+    }
   };
 
   const prev = () => setActiveMediaIndex((i) => Math.max(0, i - 1));
@@ -178,6 +199,29 @@ export default function MediaCard({ post }: { post: InstagramPost }) {
               >
                 {expanded ? "less" : "more"}
               </button>
+            )}
+            
+            {/* Action Tools for Caption */}
+            {expanded && (
+              <div className="flex gap-2 mt-3 mb-1">
+                <button
+                  onClick={handleCopyCaption}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-100 text-gray-700 text-[12px] font-medium hover:bg-gray-200 transition"
+                >
+                  {copiedCaption ? <Check className="w-3.5 h-3.5 text-green-600" /> : <Copy className="w-3.5 h-3.5 text-gray-500" />}
+                  {copiedCaption ? "Copied!" : "Copy Caption"}
+                </button>
+                
+                {(post.caption?.match(/#[\w]+/g) || []).length > 0 && (
+                  <button
+                    onClick={handleCopyHashtags}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-100 text-gray-700 text-[12px] font-medium hover:bg-gray-200 transition"
+                  >
+                    {copiedHashtags ? <Check className="w-3.5 h-3.5 text-green-600" /> : <Hash className="w-3.5 h-3.5 text-gray-500" />}
+                    {copiedHashtags ? "Copied!" : "Extract Hashtags"}
+                  </button>
+                )}
+              </div>
             )}
           </div>
         )}

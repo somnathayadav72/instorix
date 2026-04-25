@@ -11,7 +11,7 @@ const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://instorix.in";
 const APP_NAME = "Instorix";
 const TITLE = "Instorix — Free Instagram Downloader | Save Reels, Stories & Posts in HD";
 const DESCRIPTION =
-  "Download Instagram videos, reels, stories, posts, carousels and IGTV in HD quality for free. No login required. Fast, safe, and works on any device — iPhone, Android, PC.";
+  "Download Instagram videos, reels, stories, posts, carousels, profile pictures (DP), and audio in HD quality for free. Extract and copy captions and hashtags instantly. No login required. Fast, safe, and works on any device.";
 const KEYWORDS = [
   // Core product keywords
   "instagram downloader",
@@ -50,6 +50,16 @@ const KEYWORDS = [
   "instagram hd downloader",
   "instagram 1080p download",
   "save reels without watermark",
+  // New Features (DP, Audio, Caption)
+  "instagram profile picture downloader",
+  "download instagram dp hd",
+  "instagram dp viewer",
+  "instagram audio downloader",
+  "download instagram reel audio mp3",
+  "instagram to mp3",
+  "copy instagram caption",
+  "instagram hashtag extractor",
+  "instagram caption copy",
   // Long tail
   "how to download instagram videos",
   "how to save instagram reels",
