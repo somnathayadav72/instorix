@@ -80,7 +80,6 @@ export async function GET(request: NextRequest) {
     });
 
     if (!response.ok) {
-      console.error(`Proxy upstream error: ${response.status} ${response.statusText} for ${fetchUrl.substring(0, 120)}`);
       throw new Error(`Failed to fetch media: ${response.status} ${response.statusText}`);
     }
 
@@ -113,8 +112,7 @@ export async function GET(request: NextRequest) {
         'Access-Control-Allow-Origin': '*',
       },
     });
-  } catch (error) {
-    console.error('Proxy error:', error);
+  } catch {
     return NextResponse.json({ error: 'Failed to proxy the request' }, { status: 500 });
   }
 }

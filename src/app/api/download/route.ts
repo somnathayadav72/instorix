@@ -106,11 +106,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const pathname = parsedUrl.pathname.toLowerCase();
+
     // Detect profile URLs (e.g. instagram.com/username/)
-    const isProfileUrl = !/\/(p|reel|tv|stories)\//.test(url);
+    const isProfileUrl = !/\/(p|reels?|tv|stories)\//.test(pathname);
     let username: string | null = null;
     if (isProfileUrl) {
-      const match = url.match(/(?:https?:\/\/)?(?:www\.)?instagram\.com\/([a-zA-Z0-9._]+)/);
+      const match = parsedUrl.pathname.match(/^\/([a-zA-Z0-9._]+)/);
       if (match && match[1] && !['explore', 'reels', 'stories'].includes(match[1])) {
         username = match[1];
       }
@@ -131,7 +133,9 @@ export async function POST(request: NextRequest) {
     }
 
     let post: InstagramPost | null = null;
-    const isReel = url.includes('/reel/');
+    const isReel = /\/reels?\//.test(pathname);
+    const hasVideoMedia = (candidate: InstagramPost | null) =>
+      Boolean(candidate?.mediaItems.some((item) => item.type === 'video'));
 
     // ─────────────────────────────────────────────────────────────
     // Profile URL Strategy: Fetch Stories (Requires Session ID)
@@ -149,7 +153,7 @@ export async function POST(request: NextRequest) {
         const hdProfilePic = user?.hd_profile_pic_url_info?.url || user?.profile_pic_url_hd || user?.profile_pic_url;
         
         // 2. Fetch stories feed if session exists
-        let mediaItems: DirectMediaItem[] = [];
+        const mediaItems: DirectMediaItem[] = [];
         let type: 'post' | 'carousel' = 'post';
         let caption = `${username}'s Profile Picture`;
 
@@ -178,8 +182,7 @@ export async function POST(request: NextRequest) {
               type = 'carousel';
               caption = `${username}'s Stories`;
             }
-          } catch (storyErr) {
-            console.warn('Could not fetch stories, falling back to DP:', storyErr instanceof Error ? storyErr.message : String(storyErr));
+          } catch {
           }
         }
 
@@ -207,8 +210,7 @@ export async function POST(request: NextRequest) {
           authorAvatar: hdProfilePic,
           mediaItems
         };
-      } catch (error) {
-        console.warn('Profile fetch failed:', error instanceof Error ? error.message : String(error));
+      } catch {
         return NextResponse.json(
           { success: false, error: 'Failed to fetch profile. The account might be private.' },
           { status: 500, headers: { 'Cache-Control': 'no-store' } }
@@ -223,7 +225,9 @@ export async function POST(request: NextRequest) {
       : [`p/${shortcode}`, `reel/${shortcode}`];
 
     for (const path of graphqlPaths) {
-      if (post && post.mediaItems.length > 0) break;
+      const shouldTryReelPath =
+        path.startsWith('reel/') && Boolean(post?.mediaItems.length) && !hasVideoMedia(post);
+      if (post && post.mediaItems.length > 0 && !shouldTryReelPath) break;
       try {
         const graphqlUrl = `https://www.instagram.com/${path}/?__a=1&__d=dis`;
         const response = await axios.get(graphqlUrl, { headers, timeout: 5000 });
@@ -231,11 +235,9 @@ export async function POST(request: NextRequest) {
           const parsed = parseGraphQLResponse(response.data);
           if (parsed && parsed.mediaItems.length > 0) post = parsed;
         } else if (response.data?.require_login) {
-          console.warn('GraphQL endpoint requires login');
           break;
         }
-      } catch (error) {
-        console.warn(`GraphQL strategy failed for /${path}/:`, error instanceof Error ? error.message : String(error));
+      } catch {
       }
     }
 
@@ -243,36 +245,38 @@ export async function POST(request: NextRequest) {
     // Strategy 2: instagram-url-direct — reliable for guests,
     // returns full-res URLs for both images and videos
     // ─────────────────────────────────────────────────────────────
-    if (!post || post.mediaItems.length === 0) {
+    if (!post || post.mediaItems.length === 0 || !hasVideoMedia(post)) {
       try {
         const directResult = await instagramGetUrl(url);
         if (directResult?.media_details && directResult.media_details.length > 0) {
-          const firstType = directResult.media_details[0].type;
-          post = {
-            id: shortcode || username || '',
-            shortcode: shortcode || username || '',
-            type: firstType === 'video'
-              ? (isReel ? 'reel' : 'post')
-              : (directResult.media_details.length > 1 ? 'carousel' : 'post'),
-            author: directResult.post_info?.owner_username || 'Unknown',
-            caption: directResult.post_info?.caption || '',
-            mediaItems: directResult.media_details.map((m) => ({
-              url: m.url,
-              type: (m.type === 'video' ? 'video' : 'image') as 'video' | 'image',
-              thumbnail: m.thumbnail || m.url,
-            })),
-          };
-          console.log('instagram-url-direct succeeded:', post?.type, post?.mediaItems.length, 'items');
+          const mediaItems = directResult.media_details.map((m) => ({
+            url: m.url,
+            type: (m.type === 'video' ? 'video' : 'image') as 'video' | 'image',
+            thumbnail: m.thumbnail || m.url,
+          }));
+          const directHasVideo = mediaItems.some((item) => item.type === 'video');
+
+          if (!post || post.mediaItems.length === 0 || directHasVideo) {
+            post = {
+              id: shortcode || username || '',
+              shortcode: shortcode || username || '',
+              type: directHasVideo
+                ? (isReel || post?.type === 'reel' ? 'reel' : 'post')
+                : (mediaItems.length > 1 ? 'carousel' : 'post'),
+              author: directResult.post_info?.owner_username || post?.author || 'Unknown',
+              caption: directResult.post_info?.caption || post?.caption || '',
+              mediaItems,
+            };
+          }
         }
-      } catch (error) {
-        console.warn('instagram-url-direct strategy failed:', error instanceof Error ? error.message : String(error));
+      } catch {
       }
     }
 
     // ─────────────────────────────────────────────────────────────
     // Strategy 3: Embed endpoint — good for video/reels without auth
     // ─────────────────────────────────────────────────────────────
-    if (!post || post.mediaItems.length === 0 || (isReel && post.mediaItems[0]?.type === 'image')) {
+    if (!post || post.mediaItems.length === 0 || ((isReel || post.type === 'reel') && !hasVideoMedia(post))) {
       try {
         const embedUrl = `https://www.instagram.com/p/${shortcode}/embed/captioned/`;
         const embedResponse = await axios.get(embedUrl, {
@@ -298,14 +302,13 @@ export async function POST(request: NextRequest) {
               const parsed = parseGraphQLResponse({ graphql: { shortcode_media: media } });
               if (parsed && parsed.mediaItems.length > 0) {
                 post = parsed;
-                console.log('Embed JSON strategy succeeded');
               }
             }
-          } catch (e) { /* ignore JSON parse errors */ }
+          } catch { /* ignore JSON parse errors */ }
         }
 
         // Fallback: regex scrape from embed HTML
-        if (!post || (isReel && post.mediaItems[0]?.type === 'image')) {
+        if (!post || ((isReel || post.type === 'reel') && !hasVideoMedia(post))) {
           const videoMatch = html.match(/"video_url":"([^"]+)"/);
           const thumbMatch = html.match(/"display_url":"([^"]+)"/);
           const authorMatch = html.match(/"username":"([^"]+)"/);
@@ -313,7 +316,6 @@ export async function POST(request: NextRequest) {
           if (videoMatch) {
             const videoUrl = unescapeUrl(videoMatch[1]);
             const thumbUrl = thumbMatch ? unescapeUrl(thumbMatch[1]) : undefined;
-            console.log('Embed video URL found:', videoUrl.substring(0, 80));
             post = {
               id: shortcode || username || '',
               shortcode: shortcode || username || '',
@@ -324,8 +326,7 @@ export async function POST(request: NextRequest) {
             };
           }
         }
-      } catch (error) {
-        console.warn('Embed strategy failed:', error instanceof Error ? error.message : String(error));
+      } catch {
       }
     }
 
@@ -346,7 +347,7 @@ export async function POST(request: NextRequest) {
             try {
               const jsonStr = content.split('window._sharedData = ')[1].split(';</script>')[0];
               sharedDataRaw = JSON.parse(jsonStr);
-            } catch (e) { /* ignore */ }
+            } catch { /* ignore */ }
           }
         });
         const sharedData = sharedDataRaw as SharedData | null;
@@ -378,8 +379,7 @@ export async function POST(request: NextRequest) {
             };
           }
         }
-      } catch (error) {
-        console.warn('HTML scraping strategy failed:', error instanceof Error ? error.message : String(error));
+      } catch {
       }
     }
     }
@@ -392,8 +392,6 @@ export async function POST(request: NextRequest) {
     }
 
     // Allow both www. and non-www. variants of the app origin
-    const rawOrigin = process.env.NEXT_PUBLIC_APP_URL || 'https://instorix.in';
-    const allowedOrigin = rawOrigin.startsWith('https://www.') ? rawOrigin : rawOrigin.replace('https://', 'https://www.');
     return NextResponse.json({ success: true, data: post }, {
       headers: {
         'Cache-Control': 'no-store',
@@ -401,8 +399,7 @@ export async function POST(request: NextRequest) {
       },
     });
 
-  } catch (error: unknown) {
-    console.error('Download API Error:', error);
+  } catch {
     return NextResponse.json(
       { success: false, error: 'Could not connect. Please check your internet and try again.' },
       { status: 500, headers: { 'Cache-Control': 'no-store' } }

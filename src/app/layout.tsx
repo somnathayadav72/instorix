@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import Script from "next/script";
+
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { ThemeProvider } from "@/components/ThemeProvider";
@@ -138,6 +139,15 @@ export const metadata: Metadata = {
     "mobile-web-app-capable": "yes",
     "format-detection": "telephone=no",
   },
+  icons: {
+    icon: [
+      { url: "/icon.svg", type: "image/svg+xml" },
+    ],
+    shortcut: ["/icon.svg"],
+    apple: [
+      { url: "/icon.svg" },
+    ],
+  },
 };
 
 export const viewport: Viewport = {
@@ -183,7 +193,7 @@ export default function RootLayout({
       "Free to Use",
       "Works on iPhone and Android",
     ],
-    screenshot: `${APP_URL}/og-image.png`,
+    screenshot: `${APP_URL}/opengraph-image`,
     aggregateRating: {
       "@type": "AggregateRating",
       ratingValue: "4.8",
@@ -291,9 +301,8 @@ export default function RootLayout({
         </ThemeProvider>
         <Analytics />
         <SpeedInsights />
-        {/* Google AdSense */}
         <Script
-          async
+          id="google-adsense"
           src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8933002492788322"
           crossOrigin="anonymous"
           strategy="afterInteractive"
@@ -302,4 +311,3 @@ export default function RootLayout({
     </html>
   );
 }
-

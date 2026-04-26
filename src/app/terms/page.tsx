@@ -68,16 +68,16 @@ export default function TermsPage() {
             <p>
               All Instagram content belongs to its original creators. Downloading does not
               transfer any copyright or IP rights. You are responsible for complying with
-              applicable copyright laws and Instagram's Terms of Service.
+              applicable copyright laws and Instagram&apos;s Terms of Service.
             </p>
           </Section>
 
           <Section title="4. Prohibited use">
             <p>You agree <strong className="text-gray-800">not</strong> to:</p>
             <ul className="list-disc list-inside space-y-1 mt-1 text-gray-500">
-              <li>Redistribute downloaded content without the creator's permission</li>
+              <li>Redistribute downloaded content without the creator&apos;s permission</li>
               <li>Use content for commercial purposes without authorization</li>
-              <li>Download private content you don't have access to</li>
+              <li>Download private content you don&apos;t have access to</li>
               <li>Automate or scrape this service in bulk</li>
               <li>Use this service to harass or harm content creators</li>
             </ul>
@@ -96,7 +96,7 @@ export default function TermsPage() {
 
           <Section title="6. Disclaimer of warranties">
             <p>
-              Instorix is provided "as is" without warranties of any kind. We do not guarantee
+              Instorix is provided &quot;as is&quot; without warranties of any kind. We do not guarantee
               availability or that all Instagram content will be downloadable. Instagram may
               change their platform in ways that affect this service at any time.
             </p>

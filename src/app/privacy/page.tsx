@@ -59,14 +59,14 @@ export default function PrivacyPage() {
           <Section title="2. URL processing">
             <p>
               When you paste an Instagram URL, it is sent to our server solely to fetch media
-              metadata from Instagram's public endpoints. We do not log, store, or share these
+              metadata from Instagram&apos;s public endpoints. We do not log, store, or share these
               URLs.
             </p>
           </Section>
 
           <Section title="3. Local storage">
             <p>
-              Your recent download history is stored only in your browser's{" "}
+              Your recent download history is stored only in your browser&apos;s{" "}
               <code className="bg-gray-100 rounded px-1 text-[13px] font-mono">
                 localStorage
               </code>
@@ -84,7 +84,7 @@ export default function PrivacyPage() {
 
           <Section title="5. Third-party services">
             <p>
-              Media is fetched from Instagram's CDN and streamed through our proxy to your
+              Media is fetched from Instagram&apos;s CDN and streamed through our proxy to your
               browser. We do not interact with advertising networks or analytics platforms.
             </p>
           </Section>

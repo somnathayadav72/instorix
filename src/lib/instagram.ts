@@ -1,7 +1,7 @@
 import { InstagramPost, MediaItem } from '@/types/instagram';
 
 export function extractShortcode(url: string): string | null {
-  const match = url.match(/(?:p|reel|tv|stories(?:\/[^\/]+)?)\/([^\/?#&]+)/);
+  const match = url.match(/(?:p|reels?|tv|stories(?:\/[^\/]+)?)\/([^\/?#&]+)/i);
   return match ? match[1] : null;
 }
 
@@ -46,11 +46,13 @@ export function parseGraphQLResponse(data: unknown): InstagramPost | null {
     if (!postData) return null;
 
     const typename = postData.__typename as string | undefined;
+    const productType = postData.product_type as string | undefined;
+    const mediaType = Number(postData.media_type);
     let type: 'post' | 'reel' | 'story' | 'igtv' | 'carousel' = 'post';
 
-    if (typename === 'GraphVideo' || typename === 'GraphQLVideo' || postData.video_versions || postData.is_video) {
-      type = postData.product_type === 'clips' ? 'reel' : 'post';
-    } else if (typename === 'GraphSidecar' || typename === 'GraphQLSidecar' || postData.carousel_media) {
+    if (typename === 'GraphVideo' || typename === 'GraphQLVideo' || postData.video_versions || postData.is_video || mediaType === 2 || productType === 'clips') {
+      type = productType === 'clips' ? 'reel' : 'post';
+    } else if (typename === 'GraphSidecar' || typename === 'GraphQLSidecar' || postData.carousel_media || mediaType === 8) {
       type = 'carousel';
     }
 
@@ -83,7 +85,7 @@ export function parseGraphQLResponse(data: unknown): InstagramPost | null {
         const node = ((edge.node || edge) as Obj);
         const imageVersions = node.image_versions2 as Obj | undefined;
         const candidates = imageVersions?.candidates as Obj[] | undefined;
-        const isVideo = node.is_video || node.video_versions;
+        const isVideo = node.is_video || node.video_versions || Number(node.media_type) === 2;
         const videoVersions = node.video_versions as Obj[] | undefined;
         mediaItems.push({
           url: (isVideo
@@ -93,7 +95,7 @@ export function parseGraphQLResponse(data: unknown): InstagramPost | null {
           thumbnail: (node.display_url || candidates?.[0]?.url) as string | undefined,
         });
       });
-    } else if (postData.is_video || postData.video_url || postData.video_versions) {
+    } else if (postData.is_video || postData.video_url || postData.video_versions || mediaType === 2 || productType === 'clips') {
       const videoVersions = postData.video_versions as Obj[] | undefined;
       const imageVersions = postData.image_versions2 as Obj | undefined;
       const candidates = imageVersions?.candidates as Obj[] | undefined;
@@ -123,8 +125,7 @@ export function parseGraphQLResponse(data: unknown): InstagramPost | null {
       timestamp,
       mediaItems,
     };
-  } catch (error) {
-    console.error('Error parsing GraphQL response', error);
+  } catch {
     return null;
   }
 }

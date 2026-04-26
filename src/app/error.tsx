@@ -12,11 +12,10 @@ export default function Error({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error(error);
   }, [error]);
 
   return (
-    <div className="min-h-screen bg-[#fafafa] flex flex-col items-center justify-center p-4 text-center">
+    <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4 text-center">
       <div className="bg-white p-8 rounded-2xl shadow-lg border border-gray-100 max-w-md w-full">
         <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
           <AlertCircle className="w-8 h-8 text-red-500" />

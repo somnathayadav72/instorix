@@ -1,14 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Loader2, CheckCircle2, AlertCircle, ClipboardPaste, ArrowRight, Trash2, Link2, Play, Image as ImageIcon, Layers, UserCircle, Music } from "lucide-react";
 import toast from "react-hot-toast";
 import { InstagramPost } from "@/types/instagram";
 import MediaCard from "@/components/MediaCard";
-import InstorixLogo from "@/components/InstorixLogo";
+import Image from "next/image";
 
-const IG_GRADIENT = "from-[#F77737] via-[#E1306C] to-[#833AB4]";
+const IG_GRADIENT = "from-insta-orange via-insta-pink to-insta-purple";
 
 export default function Hero() {
   const [url, setUrl] = useState("");
@@ -17,13 +17,16 @@ export default function Hero() {
   const [result, setResult] = useState<InstagramPost | null>(null);
   const [isValid, setIsValid] = useState<boolean | null>(null);
   const [recentDownloads, setRecentDownloads] = useState<InstagramPost[]>([]);
-  const [pasted, setPasted] = useState(false);
 
   useEffect(() => {
-    try {
-      const h = localStorage.getItem("insta_history");
-      if (h) setRecentDownloads(JSON.parse(h));
-    } catch {}
+    const frameId = window.requestAnimationFrame(() => {
+      try {
+        const h = localStorage.getItem("insta_history");
+        if (h) setRecentDownloads(JSON.parse(h));
+      } catch {}
+    });
+
+    return () => window.cancelAnimationFrame(frameId);
   }, []);
 
   const saveToHistory = (post: InstagramPost) => {
@@ -36,9 +39,6 @@ export default function Hero() {
     setRecentDownloads([]);
     localStorage.removeItem("insta_history");
   };
-
-  const isProfileUrl = (v: string) =>
-    v.includes("instagram.com") && !/\/(p|reel|tv|stories)\//.test(v);
 
   const validate = (value: string) => {
     if (!value.trim()) { setIsValid(null); setError(""); return; }
@@ -62,8 +62,6 @@ export default function Hero() {
       const pastedText = text.trim();
       setUrl(pastedText);
       validate(pastedText);
-      setPasted(true);
-      setTimeout(() => setPasted(false), 1500);
 
       if (pastedText.includes("instagram.com")) {
         handleSubmit(undefined, pastedText);
@@ -111,43 +109,30 @@ export default function Hero() {
     }
   };
 
-  const hasContent = loading || result;
-
   return (
-    <section className={`relative flex flex-col items-center px-4 overflow-hidden bg-[#fafafa] dark:bg-[#0A0A0F] transition-colors duration-500
-      ${hasContent ? 'pt-24 pb-20' : 'min-h-screen pt-32 pb-20'}`}>
+    <section className="relative flex min-h-screen flex-col items-center px-4 pt-24 pb-20 sm:pt-32 overflow-hidden bg-gray-50 dark:bg-gray-950 transition-colors duration-500">
       {/* Subtle background glow */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-[600px] h-[600px] rounded-full bg-gradient-to-br from-[#F77737]/10 via-[#E1306C]/10 to-[#833AB4]/10 blur-3xl" />
+        <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-[600px] h-[600px] rounded-full bg-gradient-to-br from-insta-orange/10 via-insta-pink/10 to-insta-purple/10 blur-3xl" />
       </div>
 
-      <div className={`relative z-10 w-full max-w-lg mx-auto flex flex-col items-center ${!hasContent ? 'my-auto' : ''}`}>
+      <div className="relative z-10 w-full max-w-lg mx-auto flex flex-col items-center">
 
         {/* ── Headline ── */}
-        <motion.div
-          initial={{ y: 16, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.1 }}
-          className="text-center mb-8 w-full"
-        >
+        <div className="text-center mb-8 w-full">
           <h1 className="text-[40px] leading-[1.1] sm:text-5xl md:text-6xl font-bold tracking-tight text-gray-900 dark:text-white mb-6">
             Download any <br className="hidden sm:block"/>
             <span className={`bg-gradient-to-r ${IG_GRADIENT} bg-clip-text text-transparent pr-1`}>
               Instagram
             </span> content
           </h1>
-          <p className="text-[17px] text-gray-500 dark:text-[#8ba1ba] font-medium max-w-md mx-auto leading-relaxed">
+          <p className="text-[17px] text-gray-500 dark:text-slate-400 font-medium max-w-md mx-auto leading-relaxed">
             Save Reels, Posts, Stories, Profile Photos and Audio in high quality. — Fast, free and easy.
           </p>
-        </motion.div>
+        </div>
 
         {/* ── Icons Row ── */}
-        <motion.div
-          initial={{ y: 16, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.2 }}
-          className="flex items-center justify-center gap-4 sm:gap-6 mb-12 w-full"
-        >
+        <div className="flex items-center justify-center gap-4 sm:gap-6 mb-12 w-full">
           {[
             { icon: Play, label: "Reels" },
             { icon: ImageIcon, label: "Posts" },
@@ -156,24 +141,19 @@ export default function Hero() {
             { icon: Music, label: "Audio" }
           ].map((item, i) => (
             <div key={i} className="flex flex-col items-center gap-3">
-              <div className="w-[52px] h-[52px] rounded-full border border-gray-200 dark:border-gray-800 bg-white dark:bg-[#12121A] flex items-center justify-center shadow-sm dark:shadow-lg">
-                <item.icon className="w-[22px] h-[22px] text-[#E1306C]" strokeWidth={1.5} />
+              <div className="w-[52px] h-[52px] rounded-full border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex items-center justify-center shadow-sm dark:shadow-lg">
+                <item.icon className="w-[22px] h-[22px] text-insta-pink" strokeWidth={1.5} />
               </div>
               <span className="text-[12px] text-gray-600 dark:text-gray-400 font-medium">{item.label}</span>
             </div>
           ))}
-        </motion.div>
+        </div>
 
         {/* ── Input card ── */}
-        <motion.div
-          initial={{ y: 20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.3 }}
-          className="w-full max-w-[540px] bg-white dark:bg-[#12121A] border border-gray-200 dark:border-gray-800 rounded-[28px] shadow-xl dark:shadow-2xl p-5 mb-6 relative z-20"
-        >
+        <div className="w-full max-w-[540px] bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-[28px] shadow-xl dark:shadow-2xl p-5 mb-6 relative z-20">
           <form onSubmit={handleSubmit} className="space-y-3">
             {/* URL field */}
-            <div className="relative flex items-center h-[56px] bg-gray-50 dark:bg-[#1A1A24] border border-gray-200 dark:border-gray-800 focus-within:border-gray-400 dark:focus-within:border-gray-600 rounded-xl overflow-hidden transition-colors">
+            <div className="relative flex items-center h-[56px] bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-800 focus-within:border-gray-400 dark:focus-within:border-gray-600 rounded-xl overflow-hidden transition-colors">
               <span className="pl-4 pr-2 text-gray-400 dark:text-gray-500">
                 <Link2 className="w-[18px] h-[18px]" />
               </span>
@@ -188,7 +168,7 @@ export default function Hero() {
                     setTimeout(() => handleSubmit(undefined, text), 10);
                   }
                 }}
-                className="flex-1 h-full bg-transparent text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 text-[15px] outline-none pr-3"
+                className="min-w-0 flex-1 h-full bg-transparent text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 text-[15px] outline-none pr-3"
               />
               <div className="pr-1.5 flex items-center gap-2">
                 {isValid === true  && <CheckCircle2 className="w-4 h-4 text-green-500 shrink-0" />}
@@ -196,9 +176,12 @@ export default function Hero() {
                 <button
                   type="button"
                   onClick={handlePasteClick}
-                  className="cursor-pointer h-[44px] px-4 rounded-lg bg-white dark:bg-[#252533] hover:bg-gray-100 dark:hover:bg-[#2d2e3d] text-gray-700 dark:text-white text-[13px] font-semibold flex items-center gap-1.5 transition shrink-0 border border-gray-200 dark:border-gray-700/50 shadow-sm dark:shadow-none"
+                  aria-label="Paste from clipboard"
+                  title="Paste from clipboard"
+                  className="cursor-pointer h-[44px] w-[44px] sm:w-auto px-0 sm:px-4 rounded-lg bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-white text-[13px] font-semibold flex items-center justify-center gap-0 sm:gap-1.5 transition shrink-0 border border-gray-200 dark:border-gray-700/50 shadow-sm dark:shadow-none"
                 >
-                  <ClipboardPaste className="w-3.5 h-3.5" /> Paste
+                  <ClipboardPaste className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
+                  <span className="hidden sm:inline">Paste</span>
                 </button>
               </div>
             </div>
@@ -234,7 +217,7 @@ export default function Hero() {
               )}
             </button>
           </form>
-        </motion.div>
+        </div>
 
         {/* ── Loading skeleton ── */}
         <AnimatePresence>
@@ -290,13 +273,16 @@ export default function Hero() {
                     onClick={() => setResult(p)}
                     className="cursor-pointer shrink-0 w-[100px] rounded-2xl overflow-hidden border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm hover:shadow-md transition group"
                   >
-                    <div className="w-full h-[100px] bg-gray-100 dark:bg-gray-800 overflow-hidden">
-                      <img
+                    <div className="relative w-full h-[100px] bg-gray-100 dark:bg-gray-800 overflow-hidden">
+                      <Image
                         src={p.mediaItems[0]?.thumbnail
                           ? `/api/proxy?url=${encodeURIComponent(p.mediaItems[0].thumbnail)}&inline=true`
-                          : ""}
-                        alt={p.author}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          : "/icon.svg"}
+                        alt={p.author ? `@${p.author}` : "Recent Instagram download"}
+                        fill
+                        sizes="100px"
+                        unoptimized
+                        className="object-cover group-hover:scale-105 transition-transform duration-300"
                       />
                     </div>
                     <div className="p-2">

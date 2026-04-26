@@ -11,7 +11,7 @@ interface VideoTrimmerProps {
   onClose: () => void;
 }
 
-const IG_GRADIENT = "from-[#F77737] via-[#E1306C] to-[#833AB4]";
+const IG_GRADIENT = "from-insta-orange via-insta-pink to-insta-purple";
 
 function pad(n: number) {
   return String(Math.floor(n)).padStart(2, "0");
@@ -89,7 +89,7 @@ function DualSlider({ duration, startTime, endTime, onStartChange, onEndChange, 
 
         {/* Start thumb — pink */}
         <div
-          className={`absolute top-1/2 -mt-3 w-6 h-6 rounded-full bg-white border-[3px] border-[#E1306C] shadow-lg z-20 ${disabled ? "opacity-40" : "cursor-grab active:cursor-grabbing"}`}
+          className={`absolute top-1/2 -mt-3 w-6 h-6 rounded-full bg-white border-[3px] border-insta-pink shadow-lg z-20 ${disabled ? "opacity-40" : "cursor-grab active:cursor-grabbing"}`}
           style={{ left: `${startPct}%`, transform: "translateX(-50%)" }}
           onMouseDown={() => { if (!disabled) dragging.current = "start"; }}
           onTouchStart={() => { if (!disabled) dragging.current = "start"; }}
@@ -97,7 +97,7 @@ function DualSlider({ duration, startTime, endTime, onStartChange, onEndChange, 
 
         {/* End thumb — purple */}
         <div
-          className={`absolute top-1/2 -mt-3 w-6 h-6 rounded-full bg-white border-[3px] border-[#833AB4] shadow-lg z-20 ${disabled ? "opacity-40" : "cursor-grab active:cursor-grabbing"}`}
+          className={`absolute top-1/2 -mt-3 w-6 h-6 rounded-full bg-white border-[3px] border-insta-purple shadow-lg z-20 ${disabled ? "opacity-40" : "cursor-grab active:cursor-grabbing"}`}
           style={{ left: `${endPct}%`, transform: "translateX(-50%)" }}
           onMouseDown={() => { if (!disabled) dragging.current = "end"; }}
           onTouchStart={() => { if (!disabled) dragging.current = "end"; }}
@@ -118,10 +118,9 @@ export default function VideoTrimmer({ proxyUrl, filename, onClose }: VideoTrimm
   const [status, setStatus] = useState<"idle" | "loading-ffmpeg" | "processing" | "done" | "error">("idle");
   const [progress, setProgress] = useState(0);
   const [errorMsg, setErrorMsg] = useState("");
-  const [mounted, setMounted] = useState(false);
+  const mounted = typeof document !== "undefined";
 
   useEffect(() => {
-    setMounted(true);
     // Optional: lock body scroll when modal is open
     document.body.style.overflow = "hidden";
     return () => { document.body.style.overflow = "auto"; };
@@ -184,7 +183,10 @@ export default function VideoTrimmer({ proxyUrl, filename, onClose }: VideoTrimm
       ]);
 
       const data = await ffmpeg.readFile("output.mp4");
-      const blob = new Blob([data as any], { type: "video/mp4" });
+      const bytes = typeof data === "string" ? new TextEncoder().encode(data) : data;
+      const arrayBuffer = new ArrayBuffer(bytes.byteLength);
+      new Uint8Array(arrayBuffer).set(bytes);
+      const blob = new Blob([arrayBuffer], { type: "video/mp4" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -197,8 +199,7 @@ export default function VideoTrimmer({ proxyUrl, filename, onClose }: VideoTrimm
       await ffmpeg.deleteFile("input.mp4");
       await ffmpeg.deleteFile("output.mp4");
       setStatus("done");
-    } catch (err) {
-      console.error("FFmpeg trim error:", err);
+    } catch {
       setErrorMsg("Trim failed. The video may be too large or your browser doesn't support WebAssembly.");
       setStatus("error");
     }
@@ -272,7 +273,7 @@ export default function VideoTrimmer({ proxyUrl, filename, onClose }: VideoTrimm
                 {/* Time labels */}
                 <div className="flex items-center justify-between mt-1">
                   <div className="text-center">
-                    <p className="text-[9px] text-[#E1306C] font-bold uppercase tracking-wide">● Start</p>
+                    <p className="text-[9px] text-insta-pink font-bold uppercase tracking-wide">● Start</p>
                     <p className="text-[13px] font-bold text-gray-900 dark:text-gray-100 font-mono">{formatDisplay(startTime)}</p>
                   </div>
                   <div className="text-center px-3 py-1 rounded-full bg-gray-100 dark:bg-gray-800">
@@ -280,7 +281,7 @@ export default function VideoTrimmer({ proxyUrl, filename, onClose }: VideoTrimm
                     <p className="text-[13px] font-bold text-gray-700 dark:text-gray-200 font-mono">{formatDisplay(trimDuration)}</p>
                   </div>
                   <div className="text-center">
-                    <p className="text-[9px] text-[#833AB4] font-bold uppercase tracking-wide">● End</p>
+                    <p className="text-[9px] text-insta-purple font-bold uppercase tracking-wide">● End</p>
                     <p className="text-[13px] font-bold text-gray-900 dark:text-gray-100 font-mono">{formatDisplay(endTime)}</p>
                   </div>
                 </div>

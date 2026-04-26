@@ -13,6 +13,7 @@ interface BeforeInstallPromptEvent extends Event {
 const DISMISSED_KEY = "pwa_banner_dismissed_v2";
 
 type Platform = "android" | "ios" | "desktop" | "unknown";
+type NavigatorWithStandalone = Navigator & { standalone?: boolean };
 
 function detectPlatform(): Platform {
   if (typeof navigator === "undefined") return "unknown";
@@ -30,8 +31,7 @@ function isStandalone(): boolean {
   if (typeof window === "undefined") return false;
   return (
     window.matchMedia("(display-mode: standalone)").matches ||
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (window.navigator as any).standalone === true
+    (window.navigator as NavigatorWithStandalone).standalone === true
   );
 }
 
@@ -45,8 +45,13 @@ export default function PWAInstallBanner() {
     if (localStorage.getItem(DISMISSED_KEY)) return;
     if (isStandalone()) return;
 
-    const plat = detectPlatform();
-    setPlatform(plat);
+    const detectedPlatform = detectPlatform();
+    const frameId = window.requestAnimationFrame(() => {
+      setPlatform(detectedPlatform);
+      if (detectedPlatform === "ios") {
+        setTimeout(() => setVisible(true), 3000);
+      }
+    });
 
     // Android / desktop Chrome: wait for browser install prompt
     const handler = (e: Event) => {
@@ -54,18 +59,19 @@ export default function PWAInstallBanner() {
       setDeferredPrompt(e as BeforeInstallPromptEvent);
       setTimeout(() => setVisible(true), 2500);
     };
-    window.addEventListener("beforeinstallprompt", handler);
-    window.addEventListener("appinstalled", () => {
+    const installedHandler = () => {
       setInstalled(true);
       setVisible(false);
-    });
+    };
+    window.addEventListener("beforeinstallprompt", handler);
+    window.addEventListener("appinstalled", installedHandler);
 
     // iOS: browser never fires beforeinstallprompt — show manual guide instead
-    if (plat === "ios") {
-      setTimeout(() => setVisible(true), 3000);
-    }
-
-    return () => window.removeEventListener("beforeinstallprompt", handler);
+    return () => {
+      window.cancelAnimationFrame(frameId);
+      window.removeEventListener("beforeinstallprompt", handler);
+      window.removeEventListener("appinstalled", installedHandler);
+    };
   }, []);
 
   const handleInstall = async () => {
@@ -98,7 +104,7 @@ export default function PWAInstallBanner() {
         >
           <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-2xl overflow-hidden">
             {/* Gradient top bar */}
-            <div className="h-1 w-full bg-gradient-to-r from-[#F77737] via-[#E1306C] to-[#833AB4]" />
+            <div className="h-1 w-full bg-gradient-to-r from-insta-orange via-insta-pink to-insta-purple" />
 
             <div className="p-4 flex items-start gap-3">
               {/* Logo */}
@@ -109,8 +115,8 @@ export default function PWAInstallBanner() {
               {/* Content */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1 mb-0.5">
-                  <Smartphone className="w-3.5 h-3.5 text-[#E1306C]" />
-                  <p className="text-[11px] font-bold text-[#E1306C] uppercase tracking-wider">
+                  <Smartphone className="w-3.5 h-3.5 text-insta-pink" />
+                  <p className="text-[11px] font-bold text-insta-pink uppercase tracking-wider">
                     Add to Home Screen
                   </p>
                 </div>
@@ -149,7 +155,7 @@ export default function PWAInstallBanner() {
                 {(platform === "android" || (platform === "desktop" && deferredPrompt)) && (
                   <button
                     onClick={handleInstall}
-                    className="cursor-pointer mt-3 w-full flex items-center justify-center gap-2 py-2 rounded-xl text-[13px] font-semibold text-white bg-gradient-to-r from-[#F77737] via-[#E1306C] to-[#833AB4] hover:opacity-90 transition-opacity shadow-sm"
+                    className="cursor-pointer mt-3 w-full flex items-center justify-center gap-2 py-2 rounded-xl text-[13px] font-semibold text-white bg-gradient-to-r from-insta-orange via-insta-pink to-insta-purple hover:opacity-90 transition-opacity shadow-sm"
                   >
                     <Download className="w-4 h-4" />
                     Install App

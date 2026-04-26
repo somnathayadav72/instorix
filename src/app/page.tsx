@@ -1,5 +1,5 @@
 // Server Component — no "use client" needed here.
-// Client-only parts (AnimatePresence, Toaster) are isolated in PageShell.
+// Client-only toast handling is isolated in PageShell.
 import Navbar from "@/components/Navbar";
 import Hero from "@/components/Hero";
 import HowItWorks from "@/components/HowItWorks";

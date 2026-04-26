@@ -1,14 +1,17 @@
 "use client";
 
 import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { Download, ExternalLink, Heart, ChevronLeft, ChevronRight, Play, Image as ImageIcon, Film, Copy, Hash, Check, Music, Scissors } from "lucide-react";
 import { InstagramPost, MediaItem } from "@/types/instagram";
 import dynamic from "next/dynamic";
+import Image from "next/image";
 
 const VideoTrimmer = dynamic(() => import("@/components/VideoTrimmer"), { ssr: false });
 
-const IG_GRADIENT = "from-[#F77737] via-[#E1306C] to-[#833AB4]";
+const IG_GRADIENT = "from-insta-orange via-insta-pink to-insta-purple";
+const proxiedMediaUrl = (url?: string) =>
+  url ? `/api/proxy?url=${encodeURIComponent(url)}&inline=true` : "";
 
 export default function MediaCard({ post }: { post: InstagramPost }) {
   const [activeMediaIndex, setActiveMediaIndex] = useState(0);
@@ -75,13 +78,15 @@ export default function MediaCard({ post }: { post: InstagramPost }) {
         <div
           className={`w-9 h-9 rounded-full bg-gradient-to-tr ${IG_GRADIENT} p-[2px] shrink-0`}
         >
-          <div className="w-full h-full rounded-full bg-white flex items-center justify-center overflow-hidden">
+          <div className="relative w-full h-full rounded-full bg-white flex items-center justify-center overflow-hidden">
             {post.authorAvatar ? (
-              <img
-                src={post.authorAvatar}
-                alt={post.author}
-                className="w-full h-full object-cover rounded-full"
-                referrerPolicy="no-referrer"
+              <Image
+                src={proxiedMediaUrl(post.authorAvatar)}
+                alt={post.author ? `@${post.author}` : "Instagram profile"}
+                fill
+                sizes="36px"
+                unoptimized
+                className="object-cover rounded-full"
               />
             ) : (
               <span className="text-sm font-bold text-gray-700">
@@ -118,7 +123,7 @@ export default function MediaCard({ post }: { post: InstagramPost }) {
             src={`/api/proxy?url=${encodeURIComponent(activeMedia.url)}&inline=true`}
             poster={
               activeMedia.thumbnail
-                ? activeMedia.thumbnail  /* show poster directly from CDN */
+                ? proxiedMediaUrl(activeMedia.thumbnail)
                 : undefined
             }
             className="w-full h-full object-contain"
@@ -129,22 +134,16 @@ export default function MediaCard({ post }: { post: InstagramPost }) {
             onContextMenu={(e) => e.preventDefault()}
           />
         ) : (
-          /* Images: try direct CDN first (no CORS needed for img tags), fall back to proxy if CDN blocks */
-          <img
+          /* Images: proxy Instagram CDN media to avoid same-origin response blocking */
+          <Image
             key={activeMedia.url}
-            src={activeMedia.url}
+            src={proxiedMediaUrl(activeMedia.url)}
             alt="Instagram post"
-            className="w-full h-full object-contain"
+            fill
+            sizes="(max-width: 480px) 100vw, 480px"
+            unoptimized
+            className="object-contain"
             draggable={false}
-            referrerPolicy="no-referrer"
-            onError={(e) => {
-              const img = e.currentTarget;
-              // Only fall back once to avoid infinite loop
-              if (!img.dataset.proxyFallback) {
-                img.dataset.proxyFallback = 'true';
-                img.src = `/api/proxy?url=${encodeURIComponent(activeMedia.url)}&inline=true`;
-              }
-            }}
           />
         )}
 
@@ -198,7 +197,7 @@ export default function MediaCard({ post }: { post: InstagramPost }) {
         {/* Stats row */}
         {(post.likeCount ?? 0) > 0 && (
           <div className="flex items-center gap-1 text-[13px] font-semibold text-gray-800 dark:text-gray-200">
-            <Heart className="w-4 h-4 fill-[#E1306C] text-[#E1306C]" />
+            <Heart className="w-4 h-4 fill-insta-pink text-insta-pink" />
             {post.likeCount?.toLocaleString()} likes
           </div>
         )}
