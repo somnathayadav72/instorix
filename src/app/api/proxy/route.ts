@@ -87,11 +87,21 @@ export async function GET(request: NextRequest) {
     const isVideo = rawContentType.includes('video') || targetUrl.includes('.mp4');
     
     const audioOnly = searchParams.get('audioOnly') === 'true';
+    const isInline = searchParams.get('inline') === 'true';
 
-    // Force correct MIME so browsers don't content-sniff to image/jpeg
-    // If audioOnly, force audio/mpeg so it plays as an MP3 audio file
-    const contentType = audioOnly ? 'audio/mpeg' : isVideo ? 'video/mp4' : 'image/jpeg';
+    // For inline requests (video player, image preview): use correct MIME types
+    // For download requests: use application/octet-stream to force download.
+    // Mobile browsers (iOS Safari, Android Chrome) ignore Content-Disposition: attachment
+    // for video/mp4 and audio MIME types and try to play them inline instead.
     const extension = audioOnly ? 'mp3' : isVideo ? 'mp4' : 'jpg';
+    let contentType: string;
+    if (isInline) {
+      // Correct MIME for playback/preview
+      contentType = audioOnly ? 'audio/mpeg' : isVideo ? 'video/mp4' : 'image/jpeg';
+    } else {
+      // Force binary download — prevents mobile browsers from playing instead of saving
+      contentType = (isVideo || audioOnly) ? 'application/octet-stream' : 'image/jpeg';
+    }
 
     const shortcodeParam = searchParams.get('shortcode') || 'media';
     const defaultFilename = `instorix_${shortcodeParam}.${extension}`;
@@ -101,7 +111,6 @@ export async function GET(request: NextRequest) {
     // Strip out newlines, carriage returns, quotes, and path separators
     const filename = rawFilename.replace(/[\r\n"/\\]/g, '_');
 
-    const isInline = searchParams.get('inline') === 'true';
     const disposition = isInline ? `inline; filename="${filename}"` : `attachment; filename="${filename}"`;
 
     const responseHeaders: Record<string, string> = {
