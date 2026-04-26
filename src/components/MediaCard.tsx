@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from "react";
 import { motion } from "framer-motion";
-import { Download, ExternalLink, Heart, ChevronLeft, ChevronRight, Play, Image as ImageIcon, Film, Copy, Hash, Check, Music, Loader2 } from "lucide-react";
+import { Download, ExternalLink, Heart, ChevronLeft, ChevronRight, Play, Image as ImageIcon, Film, Copy, Hash, Check, Music, Loader2, AlertCircle } from "lucide-react";
 import { InstagramPost, MediaItem } from "@/types/instagram";
 import Image from "next/image";
 import toast from "react-hot-toast";
@@ -17,6 +17,7 @@ export default function MediaCard({ post }: { post: InstagramPost }) {
   const [copiedCaption, setCopiedCaption] = useState(false);
   const [copiedHashtags, setCopiedHashtags] = useState(false);
   const [downloading, setDownloading] = useState(false);
+  const [mediaError, setMediaError] = useState(false);
 
   const activeMedia = post.mediaItems[activeMediaIndex];
   const isVideo = activeMedia?.type === "video";
@@ -131,8 +132,14 @@ export default function MediaCard({ post }: { post: InstagramPost }) {
     }
   };
 
-  const prev = () => setActiveMediaIndex((i) => Math.max(0, i - 1));
-  const next = () => setActiveMediaIndex((i) => Math.min(post.mediaItems.length - 1, i + 1));
+  const prev = () => {
+    setMediaError(false);
+    setActiveMediaIndex((i) => Math.max(0, i - 1));
+  };
+  const next = () => {
+    setMediaError(false);
+    setActiveMediaIndex((i) => Math.min(post.mediaItems.length - 1, i + 1));
+  };
 
   const captionTrimmed =
     post.caption && post.caption.length > 120
@@ -208,6 +215,7 @@ export default function MediaCard({ post }: { post: InstagramPost }) {
             controlsList="nodownload"
             crossOrigin="anonymous"
             onContextMenu={(e) => e.preventDefault()}
+            onError={() => setMediaError(true)}
           />
         ) : (
           /* Images: proxy Instagram CDN media to avoid same-origin response blocking */
@@ -220,7 +228,17 @@ export default function MediaCard({ post }: { post: InstagramPost }) {
             unoptimized
             className="object-contain"
             draggable={false}
+            onError={() => setMediaError(true)}
           />
+        )}
+
+        {/* Error overlay if media fails to load */}
+        {mediaError && (
+          <div className="absolute inset-0 z-10 flex flex-col items-center justify-center p-6 text-center bg-gray-900/90 backdrop-blur-sm border border-red-500/20 m-2 rounded-xl">
+            <AlertCircle className="w-10 h-10 text-red-400 mb-3" />
+            <p className="text-white font-medium text-sm mb-1">Media failed to load</p>
+            <p className="text-gray-400 text-xs">Instagram servers might be blocking the request. Please refresh the page and try again.</p>
+          </div>
         )}
 
         {/* Play overlay for video poster */}
@@ -255,7 +273,10 @@ export default function MediaCard({ post }: { post: InstagramPost }) {
               {post.mediaItems.map((_, i) => (
                 <button
                   key={i}
-                  onClick={() => setActiveMediaIndex(i)}
+                  onClick={() => {
+                    setMediaError(false);
+                    setActiveMediaIndex(i);
+                  }}
                   className={`cursor-pointer w-1.5 h-1.5 rounded-full transition-all ${
                     i === activeMediaIndex
                       ? "bg-white w-3"
