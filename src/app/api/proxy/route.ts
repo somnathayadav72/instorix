@@ -104,13 +104,21 @@ export async function GET(request: NextRequest) {
     const isInline = searchParams.get('inline') === 'true';
     const disposition = isInline ? `inline; filename="${filename}"` : `attachment; filename="${filename}"`;
 
+    const responseHeaders: Record<string, string> = {
+      'Content-Type': contentType,
+      'Content-Disposition': disposition,
+      'Cache-Control': 'no-store',
+      'Access-Control-Allow-Origin': '*',
+    };
+
+    // Forward Content-Length so mobile browsers can show download progress
+    const contentLength = response.headers.get('content-length');
+    if (contentLength) {
+      responseHeaders['Content-Length'] = contentLength;
+    }
+
     return new NextResponse(response.body, {
-      headers: {
-        'Content-Type': contentType,
-        'Content-Disposition': disposition,
-        'Cache-Control': 'no-store',
-        'Access-Control-Allow-Origin': '*',
-      },
+      headers: responseHeaders,
     });
   } catch {
     return NextResponse.json({ error: 'Failed to proxy the request' }, { status: 500 });

@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { motion } from "framer-motion";
-import { Download, ExternalLink, Heart, ChevronLeft, ChevronRight, Play, Image as ImageIcon, Film, Copy, Hash, Check, Music, Scissors } from "lucide-react";
+import { Download, ExternalLink, Heart, ChevronLeft, ChevronRight, Play, Image as ImageIcon, Film, Copy, Hash, Check, Music, Scissors, Loader2 } from "lucide-react";
 import { InstagramPost, MediaItem } from "@/types/instagram";
 import dynamic from "next/dynamic";
 import Image from "next/image";
+import toast from "react-hot-toast";
 
 const VideoTrimmer = dynamic(() => import("@/components/VideoTrimmer"), { ssr: false });
 
@@ -19,23 +20,101 @@ export default function MediaCard({ post }: { post: InstagramPost }) {
   const [copiedCaption, setCopiedCaption] = useState(false);
   const [copiedHashtags, setCopiedHashtags] = useState(false);
   const [showTrimmer, setShowTrimmer] = useState(false);
+  const [downloading, setDownloading] = useState(false);
 
   const activeMedia = post.mediaItems[activeMediaIndex];
   const isVideo = activeMedia?.type === "video";
   const isCarousel = post.mediaItems.length > 1;
-
-  const handleDownload = (media: MediaItem, index?: number, audioOnly = false) => {
+  /**
+   * Build the proxy download URL for a given media item.
+   */
+  const buildProxyUrl = useCallback((media: MediaItem, index?: number, audioOnly = false) => {
     const ext = audioOnly ? "mp3" : media.type === "video" ? "mp4" : "jpg";
     const suffix = index !== undefined ? `_${index + 1}` : "";
     const filename = `instorix_${post.shortcode}${suffix}.${ext}`;
     const proxyUrl = `/api/proxy?url=${encodeURIComponent(media.url)}&shortcode=${post.shortcode}&filename=${encodeURIComponent(filename)}${audioOnly ? '&audioOnly=true' : ''}`;
+    return { filename, proxyUrl };
+  }, [post.shortcode]);
+
+  /**
+   * Blob-based download — works from any context (setTimeout, loops, etc.)
+   * Used for "Download All" on every platform and as desktop single-download.
+   */
+  const blobDownload = useCallback(async (media: MediaItem, index?: number, audioOnly = false) => {
+    const { filename, proxyUrl } = buildProxyUrl(media, index, audioOnly);
+    const res = await fetch(proxyUrl);
+    if (!res.ok) throw new Error("Download failed");
+    const blob = await res.blob();
+    const blobUrl = URL.createObjectURL(blob);
     const a = document.createElement("a");
-    a.href = proxyUrl;
+    a.href = blobUrl;
     a.download = filename;
+    a.style.display = "none";
     document.body.appendChild(a);
     a.click();
-    document.body.removeChild(a);
-  };
+    setTimeout(() => {
+      document.body.removeChild(a);
+      URL.revokeObjectURL(blobUrl);
+    }, 1000);
+  }, [buildProxyUrl]);
+
+  /**
+   * Cross-platform download handler — called from DIRECT user click only.
+   *
+   * MOBILE (iOS Safari/Chrome, Android Chrome):
+   *   Opens the proxy URL in a new tab. The proxy returns
+   *   Content-Disposition: attachment which triggers native download.
+   *   Must be synchronous from click (no await before window.open).
+   *
+   * DESKTOP:
+   *   fetch → Blob → Object URL for better UX (toast, no new tab).
+   */
+  const handleDownload = useCallback(async (media: MediaItem, index?: number, audioOnly = false) => {
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
+    if (isMobile) {
+      const { proxyUrl } = buildProxyUrl(media, index, audioOnly);
+      window.open(proxyUrl, '_blank');
+      toast.success("Download started!");
+      return;
+    }
+
+    // Desktop: blob approach
+    setDownloading(true);
+    const toastId = toast.loading("Preparing download…");
+    try {
+      await blobDownload(media, index, audioOnly);
+      toast.success("Download started!", { id: toastId });
+    } catch {
+      toast.error("Download failed. Please try again.", { id: toastId });
+    } finally {
+      setDownloading(false);
+    }
+  }, [buildProxyUrl, blobDownload]);
+
+  /**
+   * Download all carousel items sequentially using blob approach.
+   * Works on all platforms including mobile (no window.open, no popup block).
+   */
+  const handleDownloadAll = useCallback(async () => {
+    setDownloading(true);
+    const toastId = toast.loading(`Downloading ${post.mediaItems.length} items…`);
+    try {
+      for (let i = 0; i < post.mediaItems.length; i++) {
+        toast.loading(`Downloading ${i + 1}/${post.mediaItems.length}…`, { id: toastId });
+        await blobDownload(post.mediaItems[i], i);
+        // Small delay between downloads so browser processes each one
+        if (i < post.mediaItems.length - 1) {
+          await new Promise(r => setTimeout(r, 800));
+        }
+      }
+      toast.success("All downloads complete!", { id: toastId });
+    } catch {
+      toast.error("Some downloads failed. Try downloading individually.", { id: toastId });
+    } finally {
+      setDownloading(false);
+    }
+  }, [post.mediaItems, blobDownload]);
 
   const handleCopyCaption = () => {
     if (post.caption) {
@@ -129,8 +208,9 @@ export default function MediaCard({ post }: { post: InstagramPost }) {
             className="w-full h-full object-contain"
             controls
             playsInline
-            preload="metadata"
+            preload="auto"
             controlsList="nodownload"
+            crossOrigin="anonymous"
             onContextMenu={(e) => e.preventDefault()}
           />
         ) : (
@@ -245,18 +325,16 @@ export default function MediaCard({ post }: { post: InstagramPost }) {
             <div className="flex gap-2">
               <button
                 onClick={() => handleDownload(activeMedia, activeMediaIndex)}
-                className={`cursor-pointer flex-1 flex items-center justify-center gap-2 h-11 rounded-2xl bg-gradient-to-r ${IG_GRADIENT} text-white font-semibold text-[13px] hover:opacity-90 transition-opacity shadow-sm`}
+                disabled={downloading}
+                className={`cursor-pointer flex-1 flex items-center justify-center gap-2 h-11 rounded-2xl bg-gradient-to-r ${IG_GRADIENT} text-white font-semibold text-[13px] hover:opacity-90 transition-opacity shadow-sm disabled:opacity-50 disabled:cursor-not-allowed`}
               >
-                <Download className="w-4 h-4" />
-                Download This ({activeMediaIndex + 1}/{post.mediaItems.length})
+                {downloading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+                {downloading ? "Downloading…" : `Download This (${activeMediaIndex + 1}/${post.mediaItems.length})`}
               </button>
               <button
-                onClick={() =>
-                  post.mediaItems.forEach((m, i) =>
-                    setTimeout(() => handleDownload(m, i), i * 600)
-                  )
-                }
-                className="cursor-pointer flex items-center justify-center gap-1.5 h-11 px-4 rounded-2xl border-2 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 font-semibold text-[13px] hover:border-gray-300 dark:hover:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 transition"
+                onClick={handleDownloadAll}
+                disabled={downloading}
+                className="cursor-pointer flex items-center justify-center gap-1.5 h-11 px-4 rounded-2xl border-2 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 font-semibold text-[13px] hover:border-gray-300 dark:hover:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 transition disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 All
               </button>
@@ -266,10 +344,11 @@ export default function MediaCard({ post }: { post: InstagramPost }) {
               {/* Primary download */}
               <button
                 onClick={() => handleDownload(activeMedia)}
-                className={`cursor-pointer w-full flex items-center justify-center gap-2 h-12 rounded-2xl bg-gradient-to-r ${IG_GRADIENT} text-white font-semibold text-[15px] hover:opacity-90 transition-opacity shadow-md`}
+                disabled={downloading}
+                className={`cursor-pointer w-full flex items-center justify-center gap-2 h-12 rounded-2xl bg-gradient-to-r ${IG_GRADIENT} text-white font-semibold text-[15px] hover:opacity-90 transition-opacity shadow-md disabled:opacity-50 disabled:cursor-not-allowed`}
               >
-                <Download className="w-5 h-5" />
-                Download HD
+                {downloading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Download className="w-5 h-5" />}
+                {downloading ? "Downloading…" : "Download HD"}
               </button>
 
               {/* Secondary actions — only for videos/reels */}
@@ -277,7 +356,8 @@ export default function MediaCard({ post }: { post: InstagramPost }) {
                 <div className="flex gap-2">
                   <button
                     onClick={() => handleDownload(activeMedia, undefined, true)}
-                    className="cursor-pointer flex-1 flex items-center justify-center gap-1.5 h-10 rounded-2xl border-2 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 font-semibold text-[13px] hover:border-gray-300 dark:hover:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 transition"
+                    disabled={downloading}
+                    className="cursor-pointer flex-1 flex items-center justify-center gap-1.5 h-10 rounded-2xl border-2 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 font-semibold text-[13px] hover:border-gray-300 dark:hover:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 transition disabled:opacity-50 disabled:cursor-not-allowed"
                     title="Download Audio Only (MP3)"
                   >
                     <Music className="w-4 h-4" />
