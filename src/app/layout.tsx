@@ -14,7 +14,7 @@ const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://instorix.in";
 const APP_NAME = "Instorix";
 const TITLE = "Instorix — Free Instagram Downloader | Save Reels, Stories & Posts in HD";
 const DESCRIPTION =
-  "Download Instagram videos, reels, stories, posts, carousels, profile pictures (DP), and audio in HD quality for free. Trim and cut videos before downloading. Install the fast, safe PWA app on any device. No login required.";
+  "Download Instagram videos, reels, stories, posts, carousels, profile pictures (DP), and audio in HD quality for free. Install the fast, safe PWA app on any device. No login required.";
 const KEYWORDS = [
   // Core product keywords
   "instagram downloader",
@@ -63,10 +63,7 @@ const KEYWORDS = [
   "copy instagram caption",
   "instagram hashtag extractor",
   "instagram caption copy",
-  // Video Trimmer & PWA
-  "trim instagram video",
-  "instagram video trimmer",
-  "cut instagram reel",
+  // App & PWA
   "instorix app",
   "install instagram downloader app",
   "pwa instagram downloader",
