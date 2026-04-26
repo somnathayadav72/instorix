@@ -144,7 +144,7 @@ export default function Hero() {
               <div className="w-[52px] h-[52px] rounded-full border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex items-center justify-center shadow-sm dark:shadow-lg">
                 <item.icon className="w-[22px] h-[22px] text-insta-pink" strokeWidth={1.5} />
               </div>
-              <span className="text-[12px] text-gray-600 dark:text-gray-400 font-medium">{item.label}</span>
+              <span className="text-[12px] text-gray-600 dark:text-gray-400 font-medium whitespace-nowrap">{item.label}</span>
             </div>
           ))}
         </div>
